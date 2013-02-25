@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -17,25 +18,37 @@ namespace Sacknet.KinectFacialRecognition
     /// <summary>
     /// A facial recognition engine using the Kinect facial tracking system and principal component analysis for recognition
     /// </summary>
-    public class KinectFacialRecoEngine : IDisposable
+    public class KinectFacialRecognitionEngine : IDisposable
     {
         private IFrameSource frameSource;
+        private BackgroundWorker recognizerWorker;
 
+        private int imageWidth, imageHeight;
+        
         private byte[] colorImageBuffer;
+        private ColorImageFormat colorImageFormat;
+
         private short[] depthImageBuffer;
+        private DepthImageFormat depthImageFormat;
+
+        private Skeleton trackedSkeleton;
         private int previousTrackedSkeletonId = -1;
 
         private FaceTracker faceTracker;
 
         /// <summary>
-        /// Initializes a new instance of the KinectFacialRecoEngine class
+        /// Initializes a new instance of the KinectFacialRecognitionEngine class
         /// </summary>
-        public KinectFacialRecoEngine(KinectSensor kinect, IFrameSource frameSource)
+        public KinectFacialRecognitionEngine(KinectSensor kinect, IFrameSource frameSource)
         {
             this.Kinect = kinect;
             this.ProcessingMutex = new object();
             this.frameSource = frameSource;
             this.frameSource.FrameDataUpdated += this.FrameSource_FrameDataUpdated;
+
+            this.recognizerWorker = new BackgroundWorker();
+            this.recognizerWorker.DoWork += this.RecognizerWorker_DoWork;
+            this.recognizerWorker.RunWorkerCompleted += this.RecognizerWorker_RunWorkerCompleted;
         }
 
         /// <summary>
@@ -103,21 +116,45 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         private void FrameSource_FrameDataUpdated(object sender, FrameData e)
         {
-            if (this.colorImageBuffer == null || this.colorImageBuffer.Length != e.ColorFrame.PixelDataLength)
-                this.colorImageBuffer = new byte[e.ColorFrame.PixelDataLength];
+            if (!this.recognizerWorker.IsBusy)
+            {
+                if (this.colorImageBuffer == null || this.colorImageBuffer.Length != e.ColorFrame.PixelDataLength)
+                    this.colorImageBuffer = new byte[e.ColorFrame.PixelDataLength];
 
-            e.ColorFrame.CopyPixelDataTo(this.colorImageBuffer);
+                e.ColorFrame.CopyPixelDataTo(this.colorImageBuffer);
+                this.colorImageFormat = e.ColorFrame.Format;
+                this.imageWidth = e.ColorFrame.Width;
+                this.imageHeight = e.ColorFrame.Height;
 
-            if (this.depthImageBuffer == null || this.depthImageBuffer.Length != e.DepthFrame.PixelDataLength)
-                this.depthImageBuffer = new short[e.DepthFrame.PixelDataLength];
+                if (this.depthImageBuffer == null || this.depthImageBuffer.Length != e.DepthFrame.PixelDataLength)
+                    this.depthImageBuffer = new short[e.DepthFrame.PixelDataLength];
 
-            e.DepthFrame.CopyPixelDataTo(this.depthImageBuffer);
+                e.DepthFrame.CopyPixelDataTo(this.depthImageBuffer);
+                this.depthImageFormat = e.DepthFrame.Format;
 
-            if (e.TrackedSkeleton != null && e.TrackedSkeleton.TrackingState == SkeletonTrackingState.Tracked)
+                this.trackedSkeleton = e.TrackedSkeleton;
+
+                this.recognizerWorker.RunWorkerAsync(e);
+            }
+        }
+
+        /// <summary>
+        /// Worker thread for recognition processing
+        /// </summary>
+        private void RecognizerWorker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            var result = new RecognitionResult();
+            result.OriginalBitmap = this.ImageToBitmap(this.colorImageBuffer, this.imageWidth, this.imageHeight);
+            result.ProcessedBitmap = (Bitmap)result.OriginalBitmap.Clone();
+            e.Result = result;
+
+            if (this.trackedSkeleton != null && this.trackedSkeleton.TrackingState == SkeletonTrackingState.Tracked)
             {
                 // Reset the face tracker if we lost our old skeleton...
-                if (e.TrackedSkeleton.TrackingId != this.previousTrackedSkeletonId && this.faceTracker != null)
+                if (this.trackedSkeleton.TrackingId != this.previousTrackedSkeletonId && this.faceTracker != null)
                     this.faceTracker.ResetTracking();
+
+                this.previousTrackedSkeletonId = this.trackedSkeleton.TrackingId;
 
                 if (this.faceTracker == null)
                 {
@@ -137,45 +174,43 @@ namespace Sacknet.KinectFacialRecognition
                 if (this.faceTracker != null)
                 {
                     var faceTrackFrame = this.faceTracker.Track(
-                        e.ColorFrame.Format,
+                        this.colorImageFormat,
                         this.colorImageBuffer,
-                        e.DepthFrame.Format,
+                        this.depthImageFormat,
                         this.depthImageBuffer,
-                        e.TrackedSkeleton);
+                        this.trackedSkeleton);
 
                     if (faceTrackFrame.TrackSuccessful)
                     {
-                        using (var originalBitmap = this.ImageToBitmap(this.colorImageBuffer, e.ColorFrame.Width, e.ColorFrame.Height))
+                        var trackingResults = new TrackingResults
                         {
-                            var trackingResults = new TrackingResults
-                            {
-                                FacePoints = faceTrackFrame.GetProjected3DShape(),
-                                FaceRect = faceTrackFrame.FaceRect
-                            };
+                            FacePoints = faceTrackFrame.GetProjected3DShape(),
+                            FaceRect = faceTrackFrame.FaceRect
+                        };
 
-                            using (var result = this.Process(originalBitmap, trackingResults))
-                            {
-                                if (this.RecognitionComplete != null)
-                                    this.RecognitionComplete(this, result);
-                            }
-                        }
+                        this.Process(result, trackingResults);
                     }
                 }
             }
         }
 
         /// <summary>
+        /// Work complete - brings the results back to the UI thread and raises the complete event
+        /// </summary>
+        private void RecognizerWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (this.RecognitionComplete != null)
+                this.RecognitionComplete(this, (RecognitionResult)e.Result);
+        }
+
+        /// <summary>
         /// Attempt to find a trained face in the original bitmap
         /// </summary>
-        private RecognitionResult Process(Bitmap originalBitmap, TrackingResults trackingResults)
+        private void Process(RecognitionResult result, TrackingResults trackingResults)
         {
             lock (this.ProcessingMutex)
             {
-                var result = new RecognitionResult();
-                result.OriginalBitmap = originalBitmap;
-                result.ProcessedBitmap = (Bitmap)originalBitmap.Clone();
-
-                using (var origImage = new Image<Bgr, byte>(originalBitmap))
+                using (var origImage = new Image<Bgr, byte>(result.OriginalBitmap))
                 {
                     using (var g = Graphics.FromImage(result.ProcessedBitmap))
                     {
@@ -241,8 +276,6 @@ namespace Sacknet.KinectFacialRecognition
                                             Key = key
                                         }
                                     };
-
-                                    return result;
                                 }
                             }
                         }

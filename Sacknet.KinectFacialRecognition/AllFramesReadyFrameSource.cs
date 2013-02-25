@@ -53,6 +53,9 @@ namespace Sacknet.KinectFacialRecognition
 
                 using (var skeletonFrame = e.OpenSkeletonFrame())
                 {
+                    if (colorFrame == null || depthFrame == null || skeletonFrame == null)
+                        return;
+
                     skeletonData = new Skeleton[skeletonFrame.SkeletonArrayLength];
                     skeletonFrame.CopySkeletonDataTo(skeletonData);
                 }
@@ -72,7 +75,7 @@ namespace Sacknet.KinectFacialRecognition
                         this.trackedSkeletonId = skeletonOfInterest.TrackingId;
                 }
 
-                if (skeletonOfInterest != null && this.FrameDataUpdated != null)
+                if (this.FrameDataUpdated != null)
                     this.FrameDataUpdated(this, new FrameData(colorFrame, depthFrame, skeletonOfInterest));
             }
             finally

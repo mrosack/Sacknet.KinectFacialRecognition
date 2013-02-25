@@ -4,15 +4,18 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{D10C23EC-AB96-4103-9D53-0C2089A3BCFB}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{7DEB49BA-7C81-44E8-B68E-F7BD0A7C10F1}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Sacknet.KinectFacialRecognition</RootNamespace>
-    <AssemblyName>Sacknet.KinectFacialRecognition</AssemblyName>
+    <RootNamespace>Sacknet.KinectFacialRecognitionDemo</RootNamespace>
+    <AssemblyName>Sacknet.KinectFacialRecognitionDemo</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -20,9 +23,9 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -31,15 +34,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Emgu.CV">
-      <HintPath>..\packages\_Manual\Emgu.CV\Emgu.CV.dll</HintPath>
-    </Reference>
-    <Reference Include="Emgu.CV.UI">
-      <HintPath>..\packages\_Manual\Emgu.CV\Emgu.CV.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="Emgu.Util">
-      <HintPath>..\packages\_Manual\Emgu.CV\Emgu.Util.dll</HintPath>
-    </Reference>
     <Reference Include="Kinect.Toolbox">
       <HintPath>..\packages\KinectToolbox.1.2.1.1\lib\Kinect.Toolbox.dll</HintPath>
     </Reference>
@@ -54,105 +48,71 @@
       <HintPath>..\packages\KinectToolbox.1.2.1.1\lib\Microsoft.Kinect.Toolkit.FaceTracking.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AllFramesReadyFrameSource.cs" />
-    <Compile Include="RecognitionResult.cs" />
-    <Compile Include="EigenObjectRecognizer.cs" />
-    <Compile Include="FrameData.cs" />
-    <Compile Include="IFrameSource.cs" />
-    <Compile Include="KinectFacialRecognitionEngine.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TargetFace.cs" />
-    <Compile Include="TrackingResults.cs" />
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\packages\KinectToolbox.1.2.1.1\content\FaceTrackLib.dll">
-      <Link>FaceTrackLib.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cv110.dll">
-      <Link>cv110.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cvaux110.dll">
-      <Link>cvaux110.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cvextern.dll">
-      <Link>cvextern.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cxcore110.dll">
-      <Link>cxcore110.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_calib3d220.dll">
-      <Link>opencv_calib3d220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_contrib220.dll">
-      <Link>opencv_contrib220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_core220.dll">
-      <Link>opencv_core220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_features2d220.dll">
-      <Link>opencv_features2d220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_ffmpeg220.dll">
-      <Link>opencv_ffmpeg220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_flann220.dll">
-      <Link>opencv_flann220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_gpu220.dll">
-      <Link>opencv_gpu220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_highgui220.dll">
-      <Link>opencv_highgui220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_imgproc220.dll">
-      <Link>opencv_imgproc220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_legacy220.dll">
-      <Link>opencv_legacy220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_ml220.dll">
-      <Link>opencv_ml220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_objdetect220.dll">
-      <Link>opencv_objdetect220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_video220.dll">
-      <Link>opencv_video220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Kinect\FaceTrackData.dll">
-      <Link>FaceTrackData.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Sacknet.KinectFacialRecognition\Sacknet.KinectFacialRecognition.csproj">
+      <Project>{d10c23ec-ab96-4103-9d53-0c2089a3bcfb}</Project>
+      <Name>Sacknet.KinectFacialRecognition</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
