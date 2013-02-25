@@ -64,10 +64,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AllFramesReadyFrameSource.cs" />
+    <Compile Include="RecognitionResult.cs" />
+    <Compile Include="EigenObjectRecognizer.cs" />
     <Compile Include="FrameData.cs" />
     <Compile Include="IFrameSource.cs" />
     <Compile Include="KinectFacialRecoEngine.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TargetFace.cs" />
+    <Compile Include="TrackingResults.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

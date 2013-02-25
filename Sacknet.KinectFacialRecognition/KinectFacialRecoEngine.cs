@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Emgu.CV;
+using Emgu.CV.Structure;
 using Microsoft.Kinect;
 using Microsoft.Kinect.Toolkit.FaceTracking;
 
@@ -29,14 +33,62 @@ namespace Sacknet.KinectFacialRecognition
         public KinectFacialRecoEngine(KinectSensor kinect, IFrameSource frameSource)
         {
             this.Kinect = kinect;
+            this.ProcessingMutex = new object();
             this.frameSource = frameSource;
             this.frameSource.FrameDataUpdated += this.FrameSource_FrameDataUpdated;
         }
 
         /// <summary>
-        /// Gets or sets the active Kinect sensor
+        /// Raised when recognition has been completed for a frame
         /// </summary>
-        protected KinectSensor Kinect { get; set; }
+        public event EventHandler<RecognitionResult> RecognitionComplete;
+
+        /// <summary>
+        /// Gets the active Kinect sensor
+        /// </summary>
+        protected KinectSensor Kinect { get; private set; }
+
+        /// <summary>
+        /// Gets a mutex that prevents the target faces from being updated during processing and vice-versa
+        /// </summary>
+        protected object ProcessingMutex { get; private set; }
+
+        /// <summary>
+        /// Gets the facial recognition engine
+        /// </summary>
+        protected EigenObjectRecognizer Recognizer { get; private set; }
+
+        /// <summary>
+        /// Loads the given target faces into the eigen object recognizer
+        /// </summary>
+        /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
+        public virtual void SetTargetFaces(IEnumerable<TargetFace> faces)
+        {
+            this.SetTargetFaces(faces, 1750);
+        }
+
+        /// <summary>
+        /// Loads the given target faces into the eigen object recognizer
+        /// </summary>
+        /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
+        /// <param name="threshold">Eigen distance threshold for a match.  1500-2000 is a reasonable value.  0 will never match.</param>
+        public virtual void SetTargetFaces(IEnumerable<TargetFace> faces, int threshold)
+        {
+            lock (this.ProcessingMutex)
+            {
+                if (this.Recognizer != null)
+                {
+                    this.Recognizer.Dispose();
+                    this.Recognizer = null;
+                }
+
+                if (faces != null && faces.Any())
+                {
+                    var termCrit = new MCvTermCriteria(faces.Count(), 0.001);
+                    this.Recognizer = new EigenObjectRecognizer(faces, threshold, ref termCrit);
+                }
+            }
+        }
 
         /// <summary>
         /// Disposes the object
@@ -84,8 +136,6 @@ namespace Sacknet.KinectFacialRecognition
 
                 if (this.faceTracker != null)
                 {
-                    // DON'T DISPOSE THE FACE TRACK FRAME - even though it's marked as disposable,
-                    // it's kept around and used multiple times by the facetracker!
                     var faceTrackFrame = this.faceTracker.Track(
                         e.ColorFrame.Format,
                         this.colorImageBuffer,
@@ -95,16 +145,107 @@ namespace Sacknet.KinectFacialRecognition
 
                     if (faceTrackFrame.TrackSuccessful)
                     {
-                        var colorBitmap = this.ImageToBitmap(this.colorImageBuffer, e.ColorFrame.Width, e.ColorFrame.Height);
-                        var trackingResults = new TrackingResults
+                        using (var originalBitmap = this.ImageToBitmap(this.colorImageBuffer, e.ColorFrame.Width, e.ColorFrame.Height))
                         {
-                            FacePoints = faceTrackFrame.GetProjected3DShape(),
-                            FaceRect = new Rectangle(
-                                faceTrackFrame.FaceRect.Left,
-                                faceTrackFrame.FaceRect.Top,
-                                faceTrackFrame.FaceRect.Width,
-                                faceTrackFrame.FaceRect.Height)
-                        };
+                            var trackingResults = new TrackingResults
+                            {
+                                FacePoints = faceTrackFrame.GetProjected3DShape(),
+                                FaceRect = faceTrackFrame.FaceRect
+                            };
+
+                            using (var result = this.Process(originalBitmap, trackingResults))
+                            {
+                                if (this.RecognitionComplete != null)
+                                    this.RecognitionComplete(this, result);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempt to find a trained face in the original bitmap
+        /// </summary>
+        private RecognitionResult Process(Bitmap originalBitmap, TrackingResults trackingResults)
+        {
+            lock (this.ProcessingMutex)
+            {
+                var result = new RecognitionResult();
+                result.OriginalBitmap = originalBitmap;
+                result.ProcessedBitmap = (Bitmap)originalBitmap.Clone();
+
+                using (var origImage = new Image<Bgr, byte>(originalBitmap))
+                {
+                    using (var g = Graphics.FromImage(result.ProcessedBitmap))
+                    {
+                        // Create a path tracing the face and draw on the processed image
+                        var origPath = new GraphicsPath();
+
+                        foreach (var point in trackingResults.FaceBoundaryPoints().Select(x => this.TranslatePoint(x)))
+                        {
+                            origPath.AddLine(point, point);
+                        }
+
+                        origPath.CloseFigure();
+                        g.DrawPath(new Pen(Color.Red, 2), origPath);
+
+                        var minX = (int)origPath.PathPoints.Min(x => x.X);
+                        var maxX = (int)origPath.PathPoints.Max(x => x.X);
+                        var minY = (int)origPath.PathPoints.Min(x => x.Y);
+                        var maxY = (int)origPath.PathPoints.Max(x => x.Y);
+                        var width = maxX - minX;
+                        var height = maxY - minY;
+
+                        // Create a cropped path tracing the face...
+                        var croppedPath = new GraphicsPath();
+
+                        foreach (var point in trackingResults.FaceBoundaryPoints().Select(x => this.TranslatePoint(x)))
+                        {
+                            var croppedPoint = new System.Drawing.Point(point.X - minX, point.Y - minY);
+                            croppedPath.AddLine(croppedPoint, croppedPoint);
+                        }
+
+                        croppedPath.CloseFigure();
+
+                        // ...and create a cropped image to use for facial recognition
+                        using (var croppedBmp = new Bitmap(width, height))
+                        {
+                            using (var croppedG = Graphics.FromImage(croppedBmp))
+                            {
+                                croppedG.FillRectangle(Brushes.Gray, 0, 0, width, height);
+                                croppedG.SetClip(croppedPath);
+                                croppedG.DrawImage(result.OriginalBitmap, minX * -1, minY * -1);
+                            }
+
+                            using (var croppedImage = new Image<Bgr, byte>(croppedBmp))
+                            {
+                                using (var croppedGrey = croppedImage.Convert<Gray, byte>().Resize(100, 100, Emgu.CV.CvEnum.INTER.CV_INTER_CUBIC))
+                                {
+                                    croppedGrey._EqualizeHist();
+
+                                    string key = null;
+                                    float eigenDistance = -1;
+
+                                    if (this.Recognizer != null)
+                                        key = this.Recognizer.Recognize(croppedGrey, out eigenDistance);
+
+                                    // Save detection info
+                                    result.Faces = new List<RecognitionResult.Face>()
+                                    {
+                                        new RecognitionResult.Face()
+                                        {
+                                            TrackingResults = trackingResults,
+                                            EigenDistance = eigenDistance,
+                                            GrayFace = croppedGrey.ToBitmap(),
+                                            Key = key
+                                        }
+                                    };
+
+                                    return result;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -124,19 +265,11 @@ namespace Sacknet.KinectFacialRecognition
         }
 
         /// <summary>
-        /// Results from face tracking
+        /// Translates between kinect and drawing points
         /// </summary>
-        public class TrackingResults
+        private System.Drawing.Point TranslatePoint(Microsoft.Kinect.Toolkit.FaceTracking.PointF point)
         {
-            /// <summary>
-            /// Gets or sets the 3D points of the face
-            /// </summary>
-            public EnumIndexableCollection<FeaturePoint, Microsoft.Kinect.Toolkit.FaceTracking.PointF> FacePoints { get; set; }
-
-            /// <summary>
-            /// Gets or sets the face bounding box
-            /// </summary>
-            public Rectangle FaceRect { get; set; }
+            return new System.Drawing.Point((int)point.X, (int)point.Y);
         }
     }
 }
