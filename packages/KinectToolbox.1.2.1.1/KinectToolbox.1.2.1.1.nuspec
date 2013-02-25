@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>KinectToolbox</id>
+    <version>1.2.1.1</version>
+    <authors>David Catuhe</authors>
+    <owners>David Catuhe</owners>
+    <licenseUrl>http://kinecttoolbox.codeplex.com/license</licenseUrl>
+    <projectUrl>http://kinecttoolbox.codeplex.com/</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Kinect Toolbox is a set of useful tools for developing with Kinect for Windows SDK.
+
+It includes helpers for gestures, postures, voice command, replay and drawing.
+
+It also allows you to create a Kinect aware UI or to simulate a mouse pointer.</description>
+    <tags>Kinect</tags>
+    <references>
+      <reference file="Kinect.Toolbox.dll" />
+      <reference file="Kinect.Toolbox.Voice.dll" />
+      <reference file="Microsoft.Kinect.Toolkit.FaceTracking.dll" />
+    </references>
+  </metadata>
+</package>
