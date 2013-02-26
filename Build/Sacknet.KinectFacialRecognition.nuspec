@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>Sacknet.KinectFacialRecognition.Core</id>
+    <version>0.1</version>
+    <title>Sacknet.KinectFacialRecognition Core</title>
+    <authors>Mike Rosack</authors>
+    <owners>Mike Rosack</owners>
+    <licenseUrl>http://www.opensource.org/licenses/MS-PL</licenseUrl>
+    <projectUrl>https://github.com/mrosack/Sacknet.KinectFacialRecognition</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A facial recognition implementation for the Kinect for Windows API.  Core assembly only, won't work without Emgu CV libraries and FaceTrackData.dll.</description>
+    <releaseNotes></releaseNotes>
+    <tags>Kinect Face Facial Recognition PCA</tags>
+	<dependencies>
+      <dependency id="KinectToolbox" version="1.2.1.1" />
+    </dependencies>
+  </metadata>
+</package>
