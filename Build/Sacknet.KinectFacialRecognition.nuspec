@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>Sacknet.KinectFacialRecognition</id>
-    <version>0.1</version>
+    <version>0.1.1</version>
     <title>Sacknet.KinectFacialRecognition</title>
     <authors>Mike Rosack</authors>
     <owners>Mike Rosack</owners>
