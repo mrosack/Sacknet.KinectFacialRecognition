@@ -205,6 +205,7 @@ namespace Sacknet.KinectFacialRecognition
         /// Try to recognize the image and return its label
         /// </summary>
         /// <param name="image">The image to be recognized</param>
+        /// <param name="eigenDistance">The eigndistance to the best matched image</param>
         /// <returns>
         /// String.Empty, if not recognized;
         /// Label of the corresponding image, otherwise

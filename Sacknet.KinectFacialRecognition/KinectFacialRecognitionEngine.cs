@@ -43,6 +43,7 @@ namespace Sacknet.KinectFacialRecognition
         {
             this.Kinect = kinect;
             this.ProcessingMutex = new object();
+            this.ProcessingEnabled = true;
             this.frameSource = frameSource;
             this.frameSource.FrameDataUpdated += this.FrameSource_FrameDataUpdated;
 
@@ -55,6 +56,11 @@ namespace Sacknet.KinectFacialRecognition
         /// Raised when recognition has been completed for a frame
         /// </summary>
         public event EventHandler<RecognitionResult> RecognitionComplete;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether images will be processed for facial recognition.  If false, the video stream will be passed through untouched.
+        /// </summary>
+        public bool ProcessingEnabled { get; set; }
 
         /// <summary>
         /// Gets the active Kinect sensor
@@ -208,6 +214,9 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         private void Process(RecognitionResult result, TrackingResults trackingResults)
         {
+            if (!this.ProcessingEnabled)
+                return;
+
             lock (this.ProcessingMutex)
             {
                 using (var origImage = new Image<Bgr, byte>(result.OriginalBitmap))
