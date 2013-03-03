@@ -6,3 +6,5 @@ obj
 *.Cache
 /Build/lib
 *.nupkg
+
+/Build/*.txt
