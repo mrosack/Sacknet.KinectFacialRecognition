@@ -49,24 +49,30 @@ using System.Threading.Tasks;
 
 namespace Sacknet.KinectFacialRecognition
 {
+    public class FloatImage
+    {
+        public FloatImage(int width, int height)
+        {
+            this.Step = width;
+            this.Size = new Size(width, height);
+            this.Data = new float[width * height];
+        }
+
+        public int Step;
+        public Size Size;
+        public float[] Data;
+    }
+
     /// <summary>
     /// Port of a subset of the OpenCV EigenObjects functions to managed C# so we don't need to
     /// use Emgu CV and bring in the entire unmanaged library...
     /// </summary>
     public static class ManagedEigenObjects
     {
-        public static void CalcEigenObjects(Bitmap[] input, int maxIteration, double eps, Bitmap[] eigVecs, float[] eigVals, Bitmap avg)
+        public static void CalcEigenObjects(Bitmap[] input, int maxIteration, double eps, FloatImage[] eigVecs, float[] eigVals, FloatImage avg)
         {
             if (input.Length == 0)
                 return;
-
-            var avgBitData = avg.LockBits(new Rectangle(0, 0, avg.Width, avg.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, avg.PixelFormat);
-            int avg_step = avgBitData.Stride;
-            Size avg_size = avg.Size;
-
-            float[] avg_data = new float[avg_step * avg.Height];
-            Marshal.Copy(avgBitData.Scan0, avg_data, 0, avg_data.Length);
-            avg.UnlockBits(avgBitData);
 
             int nObjects = input.Length;
             int nEigens = nObjects - 1;
@@ -75,142 +81,89 @@ namespace Sacknet.KinectFacialRecognition
             float[][] eigs = new float[nEigens][];
             int obj_step = 0, old_step = 0;
             int eig_step = 0, oldeig_step = 0;
-            Size obj_size = avg_size, old_size = avg_size, oldeig_size = avg_size;
+            Size obj_size = avg.Size, old_size = avg.Size, oldeig_size = avg.Size;
 
             for (var i = 0; i < nObjects; i++)
             {
                 Bitmap obj = input[i];
-                var objBitData = obj.LockBits(new Rectangle(0, 0, obj.Width, obj.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, obj.PixelFormat);
-                obj_step = objBitData.Stride;
+                objs[i] = CopyGrayscaleBitmapToByteArray(obj, out obj_step);
                 obj_size = obj.Size;
 
-                /*if( img->depth != IPL_DEPTH_8U )
-                    CV_ERROR( CV_BadDepth, cvUnsupportedFormat );
-                if( obj_size != avg_size || obj_size != old_size )
-                    CV_ERROR( CV_StsBadArg, "Different sizes of objects" );
-                if( img->nChannels != 1 )
-                    CV_ERROR( CV_BadNumChannels, cvUnsupportedFormat );
-                if( i > 0 && obj_step != old_step )
-                    CV_ERROR( CV_StsBadArg, "Different steps of objects" );*/
+                if( obj_size != avg.Size || obj_size != old_size )
+                    throw new ApplicationException("Different sizes of objects");
+                if (i > 0 && obj_step != old_step)
+                    throw new ApplicationException("Different steps of objects");
 
                 old_step = obj_step;
                 old_size = obj_size;
-
-                objs[i] = new byte[obj_step * obj.Height];
-                Marshal.Copy(objBitData.Scan0, objs[i], 0, objs[i].Length);
-                obj.UnlockBits(objBitData);
             }
 
             for (var i = 0; i < nEigens; i++)
             {
-                Bitmap eig = eigVecs[i];
-                var eigBitData = eig.LockBits(new Rectangle(0, 0, eig.Width, eig.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, eig.PixelFormat);
-                eig_step = eigBitData.Stride;
-                Size eig_size = eig.Size;
+                FloatImage eig = eigVecs[i];
+                eig_step = eig.Step;
+                eigs[i] = eig.Data;
 
-                /*if( eig->depth != IPL_DEPTH_32F )
-                    CV_ERROR( CV_BadDepth, cvUnsupportedFormat );
-                if( eig_size != avg_size || eig_size != oldeig_size )
-                    CV_ERROR( CV_StsBadArg, "Different sizes of objects" );
-                if( eig->nChannels != 1 )
-                    CV_ERROR( CV_BadNumChannels, cvUnsupportedFormat );
-                if( i > 0 && eig_step != oldeig_step )
-                    CV_ERROR( CV_StsBadArg, "Different steps of objects" );*/
+                if( eig.Size != avg.Size || eig.Size != oldeig_size )
+                    throw new ApplicationException("Different sizes of objects");
+                if (i > 0 && eig_step != oldeig_step)
+                    throw new ApplicationException("Different steps of objects");
 
-                oldeig_step = eig_step;
-                oldeig_size = eig_size;
-
-                eigs[i] = new float[eig_step * eig.Height];
-                Marshal.Copy(eigBitData.Scan0, eigs[i], 0, eigs[i].Length);
-                eig.UnlockBits(eigBitData);
+                oldeig_step = eig.Step;
+                oldeig_size = eig.Size;
             }
             
             CalcEigenObjects(nObjects, objs, obj_step,
                                         eigs, eig_step, obj_size,
-                                        maxIteration, eps, avg_data, avg_step, eigVals);
-
-            // Update avg and eigVecs for return...
-            avgBitData = avg.LockBits(new Rectangle(0, 0, avg.Width, avg.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, avg.PixelFormat);
-            Marshal.Copy(avg_data, 0, avgBitData.Scan0, avg_data.Length);
-            avg.UnlockBits(avgBitData);
-
-            for (var i = 0; i < nEigens; i++)
-            {
-                Bitmap eig = eigVecs[i];
-                var eigBitData = eig.LockBits(new Rectangle(0, 0, eig.Width, eig.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, eig.PixelFormat);
-                Marshal.Copy(eigs[i], 0, eigBitData.Scan0, eigs[i].Length);
-                eig.UnlockBits(eigBitData);
-            }
+                                        maxIteration, eps, avg.Data, avg.Step, eigVals);
         }
 
-        public static float[] EigenDecomposite(Bitmap obj, Bitmap[] eigInput, Bitmap avg)
+        public static float[] EigenDecomposite(Bitmap obj, FloatImage[] eigInput, FloatImage avg)
         {
             var nEigObjs = eigInput.Length;
             var coeffs = new float[nEigObjs];
 
             int i;
 
-            var avgBitData = avg.LockBits(new Rectangle(0, 0, avg.Width, avg.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, avg.PixelFormat);
-            int avg_step = avgBitData.Stride;
-            Size avg_size = avg.Size;
-
-            float[] avg_data = new float[avg_step * avg.Height];
-            Marshal.Copy(avgBitData.Scan0, avg_data, 0, avg_data.Length);
-            avg.UnlockBits(avgBitData);
+            int obj_step;
+            byte[] obj_data = CopyGrayscaleBitmapToByteArray(obj, out obj_step);
+            Size obj_size = obj.Size;
 
             /*cvGetImageRawData( avg, (uchar **) & avg_data, &avg_step, &avg_size );
             if( avg->depth != IPL_DEPTH_32F )
                 CV_ERROR( CV_BadDepth, cvUnsupportedFormat );
             if( avg->nChannels != 1 )
-                CV_ERROR( CV_BadNumChannels, cvUnsupportedFormat ); */
+                CV_ERROR( CV_BadNumChannels, cvUnsupportedFormat );
 
-            var objBitData = obj.LockBits(new Rectangle(0, 0, obj.Width, obj.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, obj.PixelFormat);
-            int obj_step = objBitData.Stride;
-            Size obj_size = obj.Size;
-
-            byte[] obj_data = new byte[obj_step * obj.Height];
-            Marshal.Copy(objBitData.Scan0, obj_data, 0, obj_data.Length);
-            avg.UnlockBits(objBitData);
-
-            /*cvGetImageRawData( obj, &obj_data, &obj_step, &obj_size );
+            cvGetImageRawData( obj, &obj_data, &obj_step, &obj_size );
             if( obj->depth != IPL_DEPTH_8U )
                 CV_ERROR( CV_BadDepth, cvUnsupportedFormat );
             if( obj->nChannels != 1 )
-                CV_ERROR( CV_BadNumChannels, cvUnsupportedFormat );
+                CV_ERROR( CV_BadNumChannels, cvUnsupportedFormat );*/
 
-            if( obj_size != avg_size )
-                CV_ERROR( CV_StsBadArg, "Different sizes of objects" );*/
+            if (obj_size != avg.Size)
+                throw new ApplicationException("Different sizes of objects");
 
             float[][] eigs = new float[nEigObjs][];
             int eig_step = 0, old_step = 0;
-            Size eig_size = avg_size, old_size = avg_size;
+            Size eig_size = avg.Size, old_size = avg.Size;
 
             for (i = 0; i < nEigObjs; i++)
             {
-                Bitmap eig = eigInput[i];
-                var eigBitData = eig.LockBits(new Rectangle(0, 0, eig.Width, eig.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, eig.PixelFormat);
-                eig_step = eigBitData.Stride;
-                eig_size = eig.Size;
+                FloatImage eig = eigInput[i];
+                eig_step = eig.Step;
+                eigs[i] = eig.Data;
 
-                /*cvGetImageRawData( eig, (uchar **) & eig_data, &eig_step, &eig_size );
-                if( eig->depth != IPL_DEPTH_32F )
-                    CV_ERROR( CV_BadDepth, cvUnsupportedFormat );
-                if( eig_size != avg_size || eig_size != old_size )
-                    CV_ERROR( CV_StsBadArg, "Different sizes of objects" );
-                if( eig->nChannels != 1 )
-                    CV_ERROR( CV_BadNumChannels, cvUnsupportedFormat );
-                if( i > 0 && eig_step != old_step )
-                    CV_ERROR( CV_StsBadArg, "Different steps of objects" );*/
+                if( eig_size != avg.Size || eig_size != old_size )
+                    throw new ApplicationException("Different sizes of objects");
+                if (i > 0 && eig_step != old_step)
+                    throw new ApplicationException("Different steps of objects");
 
-                old_step = eig_step;
-                old_size = eig_size;
-
-                eigs[i] = new float[eig_step * eig.Height];
-                Marshal.Copy(eigBitData.Scan0, eigs[i], 0, eigs[i].Length);
-                eig.UnlockBits(eigBitData);
+                old_step = eig.Step;
+                old_size = eig.Size;
             }
 
-            EigenDecomposite(obj_data, obj_step, nEigObjs, eigs, eig_step, avg_data, avg_step, obj_size, coeffs);
+            EigenDecomposite(obj_data, obj_step, nEigObjs, eigs, eig_step, avg.Data, avg.Step, obj_size, coeffs);
 
             return coeffs;
         }
@@ -221,19 +174,11 @@ namespace Sacknet.KinectFacialRecognition
         {
             int i;
 
-            /*if( nEigObjs < 2 )
-                return CV_BADFACTOR_ERR;
-            if( ioFlags < 0 || ioFlags > 1 )
-                return CV_BADFACTOR_ERR;
-            if( size.width > objStep || 4 * size.width > eigStep ||
-                4 * size.width > avgStep || size.height < 1 )
-                return CV_BADSIZE_ERR;
-            if( obj == NULL || eigInput == NULL || coeffs == NULL || avg == NULL )
-                return CV_NULLPTR_ERR;
-            if( !ioFlags )
-                for( i = 0; i < nEigObjs; i++ )
-                    if( ((uchar **) eigInput)[i] == NULL )
-                        return CV_NULLPTR_ERR;*/
+            if( nEigObjs < 2 )
+                throw new ApplicationException("CV_BADFACTOR_ERR");
+            if( size.Width > objStep || 4 * size.Width > eigStep ||
+                4 * size.Width > avgStep || size.Height < 1 )
+                throw new ApplicationException("CV_BADSIZE_ERR");
 
             /* no callback */
             for (i = 0; i < nEigObjs; i++)
@@ -304,6 +249,29 @@ namespace Sacknet.KinectFacialRecognition
             return w;
         }
 
+        private static byte[] CopyGrayscaleBitmapToByteArray(Bitmap bitmap, out int step)
+        {
+            var bits = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, bitmap.PixelFormat);
+            step = bits.Stride;
+
+            byte[] tempData = new byte[step * bitmap.Height];
+            Marshal.Copy(bits.Scan0, tempData, 0, tempData.Length);
+            bitmap.UnlockBits(bits);
+
+            if (bitmap.PixelFormat == System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+            {
+                step /= 4;
+                byte[] result = new byte[step * bitmap.Height];
+
+                for (int i = 0; i < result.Length; i++)
+                    result[i] = tempData[i * 4];
+
+                return result;
+            }
+
+            return tempData;
+        }
+
         private static void CalcEigenObjects(int nObjects, byte[][] input, int objStep,
                                 float[][] output, int eigStep, Size size,
                                 int maxIteration, double eps, float[] avg,
@@ -321,23 +289,11 @@ namespace Sacknet.KinectFacialRecognition
 
             /* ---- TEST OF PARAMETERS ---- */
 
-            /*if (nObjects < 2)
-                return CV_BADFACTOR_ERR;
-            if (ioFlags < 0 || ioFlags > 3)
-                return CV_BADFACTOR_ERR;
-            if (input == NULL || output == NULL || avg == NULL)
-                return CV_NULLPTR_ERR;
-            if (size.width > objStep || 4 * size.width > eigStep ||
-                4 * size.width > avgStep || size.height < 1)
-                return CV_BADSIZE_ERR;
-            if (!(ioFlags & CV_EIGOBJ_INPUT_CALLBACK))
-                for (i = 0; i < nObjects; i++)
-                    if (((uchar**)input)[i] == NULL)
-                        return CV_NULLPTR_ERR;
-            if (!(ioFlags & CV_EIGOBJ_OUTPUT_CALLBACK))
-                for (i = 0; i < m1; i++)
-                    if (((float**)output)[i] == NULL)
-                        return CV_NULLPTR_ERR;*/
+            if (nObjects < 2)
+                throw new ApplicationException("CV_BADFACTOR_ERR");
+            if (size.Width > objStep || 4 * size.Width > eigStep ||
+                4 * size.Width > avgStep || size.Height < 1)
+                throw new ApplicationException("CV_BADSIZE_ERR");
 
             avgStep /= 4;
             eigStep /= 4;
@@ -469,18 +425,10 @@ namespace Sacknet.KinectFacialRecognition
 
             /* ---- TEST OF PARAMETERS ---- */
 
-            /*if( nObjects < 2 )
-                return CV_BADFACTOR_ERR;
-            if( ioFlags < 0 || ioFlags > 3 )
-                return CV_BADFACTOR_ERR;
-            if( ioFlags && ioBufSize < 1024 )
-                return CV_BADFACTOR_ERR;
-            if( ioFlags && buffer == NULL )
-                return CV_NULLPTR_ERR;
-            if( input == NULL || avg == NULL || covarMatrix == NULL )
-                return CV_NULLPTR_ERR;
-            if( size.width > objStep || 4 * size.width > avgStep || size.height < 1 )
-                return CV_BADSIZE_ERR;*/
+            if( nObjects < 2 )
+                throw new ApplicationException("CV_BADFACTOR_ERR");
+            if (size.Width > objStep || 4 * size.Width > avgStep || size.Height < 1)
+                throw new ApplicationException("CV_BADSIZE_ERR");
 
             avgStep /= 4;
 
@@ -546,10 +494,8 @@ namespace Sacknet.KinectFacialRecognition
             int i, j, k, ind;
             double aMax, anorm = 0, ax;
 
-            /*if( A == NULL || V == NULL || E == NULL )
-                return CV_NULLPTR_ERR;
-            if( n <= 0 )
-                return CV_BADSIZE_ERR;*/
+            if (n <= 0)
+                throw new ApplicationException("CV_BADSIZE_ERR");
 
             if (eps < 1.0e-7f)
                 eps = 1.0e-7f;

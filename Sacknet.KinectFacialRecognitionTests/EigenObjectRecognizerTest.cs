@@ -36,5 +36,29 @@ namespace Sacknet.KinectFacialRecognitionTests
             Assert.AreEqual(734.0543, Math.Round(eigenDistance, 4));
             Assert.AreEqual(@".\train_mike_2.png", result);
         }
+
+        [TestMethod]
+        public void ManagedRecognizerSucessfullyRecognizesMe()
+        {
+            var faces = new List<TargetFace>();
+
+            foreach (var trainingImage in Directory.GetFiles(".", "train*.*"))
+            {
+                faces.Add(new TargetFace
+                {
+                    Key = trainingImage,
+                    Image = new Bitmap(trainingImage)
+                });
+            }
+
+            var termCrit = new Emgu.CV.Structure.MCvTermCriteria(faces.Count, 0.001);
+            var recognizer = new ManagedEigenObjectRecognizer(faces, 2000, ref termCrit);
+
+            float eigenDistance;
+            var result = recognizer.Recognize(new Bitmap("test_mike.png"), out eigenDistance);
+
+            Assert.AreEqual(734.0543, Math.Round(eigenDistance, 4));
+            Assert.AreEqual(@".\train_mike_2.png", result);
+        }
     }
 }
