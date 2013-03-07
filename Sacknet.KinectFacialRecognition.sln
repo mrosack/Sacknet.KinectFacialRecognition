@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sacknet.KinectFacialRecogni
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sacknet.KinectFacialRecognitionDemo", "Sacknet.KinectFacialRecognitionDemo\Sacknet.KinectFacialRecognitionDemo.csproj", "{7DEB49BA-7C81-44E8-B68E-F7BD0A7C10F1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sacknet.KinectFacialRecognitionTests", "Sacknet.KinectFacialRecognitionTests\Sacknet.KinectFacialRecognitionTests.csproj", "{14E8FEC6-B95E-4F00-BDD1-F4FC5322180F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{7DEB49BA-7C81-44E8-B68E-F7BD0A7C10F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7DEB49BA-7C81-44E8-B68E-F7BD0A7C10F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7DEB49BA-7C81-44E8-B68E-F7BD0A7C10F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14E8FEC6-B95E-4F00-BDD1-F4FC5322180F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14E8FEC6-B95E-4F00-BDD1-F4FC5322180F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14E8FEC6-B95E-4F00-BDD1-F4FC5322180F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14E8FEC6-B95E-4F00-BDD1-F4FC5322180F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
