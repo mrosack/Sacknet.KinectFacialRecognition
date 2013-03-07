@@ -176,8 +176,8 @@ namespace Sacknet.KinectFacialRecognition
 
             if( nEigObjs < 2 )
                 throw new ApplicationException("CV_BADFACTOR_ERR");
-            if( size.Width > objStep || 4 * size.Width > eigStep ||
-                4 * size.Width > avgStep || size.Height < 1 )
+            if( size.Width > objStep || size.Width > eigStep ||
+                size.Width > avgStep || size.Height < 1 )
                 throw new ApplicationException("CV_BADSIZE_ERR");
 
             /* no callback */
@@ -199,14 +199,14 @@ namespace Sacknet.KinectFacialRecognition
             int i, k;
             float w = 0.0f;
 
-            if (size.Width > objStep || 4 * size.Width > eigStep
-                || 4 * size.Width > avgStep || size.Height < 1)
+            if (size.Width > objStep || size.Width > eigStep
+                || size.Width > avgStep || size.Height < 1)
                 return -1.0e30f;
             if (obj == null || eigObj == null || avg == null)
                 return -1.0e30f;
 
-            eigStep /= 4;
-            avgStep /= 4;
+            //eigStep /= 4;
+            //avgStep /= 4;
 
             if (size.Width == objStep && size.Width == eigStep && size.Width == avgStep)
             {
@@ -277,7 +277,7 @@ namespace Sacknet.KinectFacialRecognition
                                 int maxIteration, double eps, float[] avg,
                                 int avgStep, float[] eigVals)
         {
-            int i, j, m1 = nObjects - 1, objStep1 = objStep, eigStep1 = eigStep / 4;
+            int i, j, m1 = nObjects - 1, objStep1 = objStep, eigStep1 = eigStep;
             Size objSize, eigSize, avgSize;
             float[] c = null;
             float[] ev = null;
@@ -291,12 +291,12 @@ namespace Sacknet.KinectFacialRecognition
 
             if (nObjects < 2)
                 throw new ApplicationException("CV_BADFACTOR_ERR");
-            if (size.Width > objStep || 4 * size.Width > eigStep ||
-                4 * size.Width > avgStep || size.Height < 1)
+            if (size.Width > objStep || size.Width > eigStep ||
+                size.Width > avgStep || size.Height < 1)
                 throw new ApplicationException("CV_BADSIZE_ERR");
 
-            avgStep /= 4;
-            eigStep /= 4;
+            //avgStep /= 4;
+            //eigStep /= 4;
 
             if (objStep == size.Width && eigStep == size.Width && avgStep == size.Width)
             {
@@ -335,7 +335,7 @@ namespace Sacknet.KinectFacialRecognition
             /* Calculation of covariance matrix */
             c = new float[nObjects * nObjects];
 
-            CalcCovarMatrixEx(nObjects, input, objStep1, avg, 4 * avgStep, size, c);
+            CalcCovarMatrixEx(nObjects, input, objStep1, avg, avgStep, size, c);
 
             /* Calculation of eigenvalues & eigenvectors */
             ev = new float[nObjects * nObjects];
@@ -427,10 +427,10 @@ namespace Sacknet.KinectFacialRecognition
 
             if( nObjects < 2 )
                 throw new ApplicationException("CV_BADFACTOR_ERR");
-            if (size.Width > objStep || 4 * size.Width > avgStep || size.Height < 1)
+            if (size.Width > objStep || size.Width > avgStep || size.Height < 1)
                 throw new ApplicationException("CV_BADSIZE_ERR");
 
-            avgStep /= 4;
+            //avgStep /= 4;
 
             int i, j;
             byte[][] objects = input;
