@@ -49,26 +49,16 @@ using System.Threading.Tasks;
 
 namespace Sacknet.KinectFacialRecognition
 {
-    public class FloatImage
-    {
-        public FloatImage(int width, int height)
-        {
-            this.Step = width;
-            this.Size = new Size(width, height);
-            this.Data = new float[width * height];
-        }
-
-        public int Step;
-        public Size Size;
-        public float[] Data;
-    }
-
     /// <summary>
     /// Port of a subset of the OpenCV EigenObjects functions to managed C# so we don't need to
-    /// use Emgu CV and bring in the entire unmanaged library...
+    /// use Emgu CV and bring in the entire unmanaged library.
+    /// (Very few comments follow as I'm mostly blindly translating..)
     /// </summary>
     public static class ManagedEigenObjects
     {
+        /// <summary>
+        /// Calculates eigen objects
+        /// </summary>
         public static void CalcEigenObjects(Bitmap[] input, int maxIteration, double eps, FloatImage[] eigVecs, float[] eigVals, FloatImage avg)
         {
             if (input.Length == 0)
@@ -89,7 +79,7 @@ namespace Sacknet.KinectFacialRecognition
                 objs[i] = CopyGrayscaleBitmapToByteArray(obj, out obj_step);
                 obj_size = obj.Size;
 
-                if( obj_size != avg.Size || obj_size != old_size )
+                if (obj_size != avg.Size || obj_size != old_size)
                     throw new ApplicationException("Different sizes of objects");
                 if (i > 0 && obj_step != old_step)
                     throw new ApplicationException("Different steps of objects");
@@ -104,7 +94,7 @@ namespace Sacknet.KinectFacialRecognition
                 eig_step = eig.Step;
                 eigs[i] = eig.Data;
 
-                if( eig.Size != avg.Size || eig.Size != oldeig_size )
+                if (eig.Size != avg.Size || eig.Size != oldeig_size)
                     throw new ApplicationException("Different sizes of objects");
                 if (i > 0 && eig_step != oldeig_step)
                     throw new ApplicationException("Different steps of objects");
@@ -112,12 +102,15 @@ namespace Sacknet.KinectFacialRecognition
                 oldeig_step = eig.Step;
                 oldeig_size = eig.Size;
             }
-            
+
             CalcEigenObjects(nObjects, objs, obj_step,
                                         eigs, eig_step, obj_size,
                                         maxIteration, eps, avg.Data, avg.Step, eigVals);
         }
 
+        /// <summary>
+        /// Calculates eigen decomposite
+        /// </summary>
         public static float[] EigenDecomposite(Bitmap obj, FloatImage[] eigInput, FloatImage avg)
         {
             var nEigObjs = eigInput.Length;
@@ -154,7 +147,7 @@ namespace Sacknet.KinectFacialRecognition
                 eig_step = eig.Step;
                 eigs[i] = eig.Data;
 
-                if( eig_size != avg.Size || eig_size != old_size )
+                if (eig_size != avg.Size || eig_size != old_size)
                     throw new ApplicationException("Different sizes of objects");
                 if (i > 0 && eig_step != old_step)
                     throw new ApplicationException("Different steps of objects");
@@ -168,16 +161,19 @@ namespace Sacknet.KinectFacialRecognition
             return coeffs;
         }
 
+        /// <summary>
+        /// Helper function to calculate eigen decomposite
+        /// </summary>
         private static void EigenDecomposite(byte[] obj, int objStep, int nEigObjs,
                             float[][] eigInput, int eigStep, float[] avg, int avgStep,
                             Size size, float[] coeffs)
         {
             int i;
 
-            if( nEigObjs < 2 )
+            if (nEigObjs < 2)
                 throw new ApplicationException("CV_BADFACTOR_ERR");
-            if( size.Width > objStep || size.Width > eigStep ||
-                size.Width > avgStep || size.Height < 1 )
+
+            if (size.Width > objStep || size.Width > eigStep || size.Width > avgStep || size.Height < 1)
                 throw new ApplicationException("CV_BADSIZE_ERR");
 
             /* no callback */
@@ -192,6 +188,9 @@ namespace Sacknet.KinectFacialRecognition
             }
         }
 
+        /// <summary>
+        /// Helper function to calculate the decomp coefficient
+        /// </summary>
         private static float CalcDecompCoeff(byte[] obj, int objStep,
                            float[] eigObj, int eigStep,
                            float[] avg, int avgStep, Size size)
@@ -199,14 +198,11 @@ namespace Sacknet.KinectFacialRecognition
             int i, k;
             float w = 0.0f;
 
-            if (size.Width > objStep || size.Width > eigStep
-                || size.Width > avgStep || size.Height < 1)
-                return -1.0e30f;
-            if (obj == null || eigObj == null || avg == null)
+            if (size.Width > objStep || size.Width > eigStep || size.Width > avgStep || size.Height < 1)
                 return -1.0e30f;
 
-            //eigStep /= 4;
-            //avgStep /= 4;
+            if (obj == null || eigObj == null || avg == null)
+                return -1.0e30f;
 
             if (size.Width == objStep && size.Width == eigStep && size.Width == avgStep)
             {
@@ -249,6 +245,9 @@ namespace Sacknet.KinectFacialRecognition
             return w;
         }
 
+        /// <summary>
+        /// Copies a grayscale bitmap to a byte array
+        /// </summary>
         private static byte[] CopyGrayscaleBitmapToByteArray(Bitmap bitmap, out int step)
         {
             var bits = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, bitmap.PixelFormat);
@@ -272,6 +271,9 @@ namespace Sacknet.KinectFacialRecognition
             return tempData;
         }
 
+        /// <summary>
+        /// Helper function to calculate eigen objects
+        /// </summary>
         private static void CalcEigenObjects(int nObjects, byte[][] input, int objStep,
                                 float[][] output, int eigStep, Size size,
                                 int maxIteration, double eps, float[] avg,
@@ -291,12 +293,8 @@ namespace Sacknet.KinectFacialRecognition
 
             if (nObjects < 2)
                 throw new ApplicationException("CV_BADFACTOR_ERR");
-            if (size.Width > objStep || size.Width > eigStep ||
-                size.Width > avgStep || size.Height < 1)
+            if (size.Width > objStep || size.Width > eigStep || size.Width > avgStep || size.Height < 1)
                 throw new ApplicationException("CV_BADSIZE_ERR");
-
-            //avgStep /= 4;
-            //eigStep /= 4;
 
             if (objStep == size.Width && eigStep == size.Width && avgStep == size.Width)
             {
@@ -417,6 +415,9 @@ namespace Sacknet.KinectFacialRecognition
                 eigVals[i] = 1.0f / (eigVals[i] * eigVals[i]);
         }
 
+        /// <summary>
+        /// Calculates covariance matrix
+        /// </summary>
         private static void CalcCovarMatrixEx(int nObjects, byte[][] input, int objStep1,
                              float[] avg, int avgStep,
                              Size size, float[] covarMatrix)
@@ -425,12 +426,11 @@ namespace Sacknet.KinectFacialRecognition
 
             /* ---- TEST OF PARAMETERS ---- */
 
-            if( nObjects < 2 )
+            if (nObjects < 2)
                 throw new ApplicationException("CV_BADFACTOR_ERR");
+
             if (size.Width > objStep || size.Width > avgStep || size.Height < 1)
                 throw new ApplicationException("CV_BADSIZE_ERR");
-
-            //avgStep /= 4;
 
             int i, j;
             byte[][] objects = input;
@@ -489,6 +489,9 @@ namespace Sacknet.KinectFacialRecognition
             }
         }
 
+        /// <summary>
+        /// Calculates jacobi eigens
+        /// </summary>
         private static void JacobiEigens(float[] a, float[] v, float[] e, int n, float eps)
         {
             int i, j, k, ind;
@@ -554,7 +557,7 @@ namespace Sacknet.KinectFacialRecognition
                             x = -apq / Math.Sqrt((double)(apq * apq) + (double)(y * y));
                             if (y < 0.0)
                                 x = -x;
-                            s = x / Math.Sqrt(2.0 * (1.0 + Math.Sqrt(1.0 - ((double)x * x))));
+                            s = x / Math.Sqrt(2.0 * (1.0 + Math.Sqrt(1.0 - (x * x))));
                             s2 = s * s;
                             c = Math.Sqrt(1.0 - s2);
                             c2 = c * c;
@@ -592,7 +595,7 @@ namespace Sacknet.KinectFacialRecognition
                                 vpi = v[v1 + i];
                                 vqi = v[v2 + i];
                                 a[a1 + i] = (float)((aip * c) - (aiq * s));
-                                a[a1 + i] = (float)((aiq * c) + (aip * s));
+                                a[a2 + i] = (float)((aiq * c) + (aip * s));
                                 v[v1 + i] = (float)((vpi * c) - (vqi * s));
                                 v[v2 + i] = (float)((vqi * c) + (vpi * s));
                             }

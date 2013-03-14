@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AllFramesReadyFrameSource.cs" />
+    <Compile Include="FloatImage.cs" />
     <Compile Include="ManagedEigenObjectRecognizer.cs" />
     <Compile Include="ManagedEigenObjects.cs" />
     <Compile Include="RecognitionResult.cs" />

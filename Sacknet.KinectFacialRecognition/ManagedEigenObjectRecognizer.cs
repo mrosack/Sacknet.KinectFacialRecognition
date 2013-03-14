@@ -9,13 +9,12 @@ using Emgu.CV.Structure;
 namespace Sacknet.KinectFacialRecognition
 {
     /// <summary>
-    /// An object recognizer using PCA (Principle Components Analysis).  Wouldn't have been possible without:
-    /// http://www.codeproject.com/Articles/239849/Multiple-face-detection-and-recognition-in-real-ti?msg=4331418#xx4331418xx
+    /// Based on the Emgu CV EigenObjectRecognizer, but converted to use fully managed objects.
     /// </summary>
     public class ManagedEigenObjectRecognizer
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="EigenObjectRecognizer"/> class.
+        /// Initializes a new instance of the <see cref="ManagedEigenObjectRecognizer"/> class.
         /// Create an object recognizer using the specific tranning data and parameters, it will always return the most similar object
         /// </summary>
         /// <param name="targetFaces">The images used for training, each of them should be the same size. It's recommended the images are histogram normalized</param>
@@ -26,7 +25,7 @@ namespace Sacknet.KinectFacialRecognition
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EigenObjectRecognizer"/> class.
+        /// Initializes a new instance of the <see cref="ManagedEigenObjectRecognizer"/> class.
         /// Create an object recognizer using the specific tranning data and parameters
         /// </summary>
         /// <param name="targetFaces">The images used for training, each of them should be the same size. It's recommended the images are histogram normalized</param>
@@ -45,14 +44,6 @@ namespace Sacknet.KinectFacialRecognition
             FloatImage averageImage;
 
             CalcEigenObjects(images, ref termCrit, out eigenImages, out averageImage);
-
-            /*
-            _avgImage.SerializationCompressionRatio = 9;
-
-            foreach (Image<Gray, Single> img in _eigenImages)
-                //Set the compression ration to best compression. The serialized object can therefore save spaces
-                img.SerializationCompressionRatio = 9;
-            */
 
             this.EigenValues = images.Select(x => EigenDecomposite(x, eigenImages, averageImage)).ToArray();
             this.EigenImages = eigenImages;
@@ -142,7 +133,7 @@ namespace Sacknet.KinectFacialRecognition
 
             foreach (var eigenValue in this.EigenValues)
             {
-                //norm = ||arr1-arr2||_L2 = sqrt( sum_I (arr1(I)-arr2(I))^2 )
+                // norm = ||arr1-arr2||_L2 = sqrt( sum_I (arr1(I)-arr2(I))^2 )
                 double sum = 0;
 
                 for (var i = 0; i < eigenValue.Length; i++)
