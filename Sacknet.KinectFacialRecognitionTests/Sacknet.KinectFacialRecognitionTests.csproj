@@ -36,13 +36,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Emgu.CV">
-      <HintPath>..\packages\_Manual\Emgu.CV\Emgu.CV.dll</HintPath>
-    </Reference>
-    <Reference Include="Emgu.Util, Version=2.2.1.1150, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\_Manual\Emgu.CV\Emgu.Util.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.XML" />
@@ -65,74 +58,6 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <Content Include="..\packages\_Manual\Emgu.CV\cv110.dll">
-      <Link>DLL\cv110.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cvaux110.dll">
-      <Link>DLL\cvaux110.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cvextern.dll">
-      <Link>DLL\cvextern.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cxcore110.dll">
-      <Link>DLL\cxcore110.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_calib3d220.dll">
-      <Link>DLL\opencv_calib3d220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_contrib220.dll">
-      <Link>DLL\opencv_contrib220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_core220.dll">
-      <Link>DLL\opencv_core220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_features2d220.dll">
-      <Link>DLL\opencv_features2d220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_ffmpeg220.dll">
-      <Link>DLL\opencv_ffmpeg220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_flann220.dll">
-      <Link>DLL\opencv_flann220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_gpu220.dll">
-      <Link>DLL\opencv_gpu220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_highgui220.dll">
-      <Link>DLL\opencv_highgui220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_imgproc220.dll">
-      <Link>DLL\opencv_imgproc220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_legacy220.dll">
-      <Link>DLL\opencv_legacy220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_ml220.dll">
-      <Link>DLL\opencv_ml220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_objdetect220.dll">
-      <Link>DLL\opencv_objdetect220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_video220.dll">
-      <Link>DLL\opencv_video220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Images\train_josh_1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

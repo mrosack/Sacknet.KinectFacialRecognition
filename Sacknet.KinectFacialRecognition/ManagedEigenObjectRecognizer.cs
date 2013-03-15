@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using Emgu.CV;
-using Emgu.CV.Structure;
 
 namespace Sacknet.KinectFacialRecognition
 {
@@ -15,27 +13,24 @@ namespace Sacknet.KinectFacialRecognition
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ManagedEigenObjectRecognizer"/> class.
-        /// Create an object recognizer using the specific tranning data and parameters, it will always return the most similar object
         /// </summary>
-        /// <param name="targetFaces">The images used for training, each of them should be the same size. It's recommended the images are histogram normalized</param>
-        /// <param name="termCrit">The criteria for recognizer training</param>
-        public ManagedEigenObjectRecognizer(IEnumerable<TargetFace> targetFaces, ref MCvTermCriteria termCrit)
-            : this(targetFaces, 0, ref termCrit)
+        public ManagedEigenObjectRecognizer(IEnumerable<TargetFace> targetFaces)
+            : this(targetFaces, 2000)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ManagedEigenObjectRecognizer"/> class.
-        /// Create an object recognizer using the specific tranning data and parameters
         /// </summary>
-        /// <param name="targetFaces">The images used for training, each of them should be the same size. It's recommended the images are histogram normalized</param>
-        /// <param name="eigenDistanceThreshold">
-        /// The eigen distance threshold, (0, ~1000].
-        /// The smaller the number, the more likely an examined image will be treated as unrecognized object. 
-        /// If the threshold is &lt; 0, the recognizer will always treated the examined image as one of the known object. 
-        /// </param>
-        /// <param name="termCrit">The criteria for recognizer training</param>
-        public ManagedEigenObjectRecognizer(IEnumerable<TargetFace> targetFaces, double eigenDistanceThreshold, ref MCvTermCriteria termCrit)
+        public ManagedEigenObjectRecognizer(IEnumerable<TargetFace> targetFaces, double eigenDistanceThreshold)
+            : this(targetFaces, eigenDistanceThreshold, targetFaces.Count(), 0.001)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ManagedEigenObjectRecognizer"/> class.
+        /// </summary>
+        public ManagedEigenObjectRecognizer(IEnumerable<TargetFace> targetFaces, double eigenDistanceThreshold, int maxIter, double eps)
         {
             Debug.Assert(eigenDistanceThreshold >= 0.0, "Eigen-distance threshold should always >= 0.0");
 
@@ -43,7 +38,7 @@ namespace Sacknet.KinectFacialRecognition
             FloatImage[] eigenImages;
             FloatImage averageImage;
 
-            CalcEigenObjects(images, ref termCrit, out eigenImages, out averageImage);
+            CalcEigenObjects(images, maxIter, eps, out eigenImages, out averageImage);
 
             this.EigenValues = images.Select(x => EigenDecomposite(x, eigenImages, averageImage)).ToArray();
             this.EigenImages = eigenImages;
@@ -85,19 +80,15 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Caculate the eigen images for the specific traning image
         /// </summary>
-        /// <param name="trainingImages">The images used for training </param>
-        /// <param name="termCrit">The criteria for tranning</param>
-        /// <param name="eigenImages">The resulting eigen images</param>
-        /// <param name="avg">The resulting average image</param>
-        public static void CalcEigenObjects(Bitmap[] trainingImages, ref MCvTermCriteria termCrit, out FloatImage[] eigenImages, out FloatImage avg)
+        public static void CalcEigenObjects(Bitmap[] trainingImages, int maxIter, double eps, out FloatImage[] eigenImages, out FloatImage avg)
         {
             int width = trainingImages[0].Width;
             int height = trainingImages[0].Height;
 
-            if (termCrit.max_iter <= 0 || termCrit.max_iter > trainingImages.Length)
-                termCrit.max_iter = trainingImages.Length;
+            if (maxIter <= 0 || maxIter > trainingImages.Length)
+                maxIter = trainingImages.Length;
 
-            int maxEigenObjs = termCrit.max_iter;
+            int maxEigenObjs = maxIter;
 
             eigenImages = new FloatImage[maxEigenObjs];
             for (int i = 0; i < eigenImages.Length; i++)
@@ -105,16 +96,12 @@ namespace Sacknet.KinectFacialRecognition
 
             avg = new FloatImage(width, height);
 
-            ManagedEigenObjects.CalcEigenObjects(trainingImages, termCrit.max_iter, termCrit.epsilon, eigenImages, null, avg);
+            ManagedEigenObjects.CalcEigenObjects(trainingImages, maxIter, eps, eigenImages, null, avg);
         }
 
         /// <summary>
         /// Decompose the image as eigen values, using the specific eigen vectors
         /// </summary>
-        /// <param name="src">The image to be decomposed</param>
-        /// <param name="eigenImages">The eigen images</param>
-        /// <param name="avg">The average images</param>
-        /// <returns>Eigen values of the decomposed image</returns>
         public static float[] EigenDecomposite(Bitmap src, FloatImage[] eigenImages, FloatImage avg)
         {
             return ManagedEigenObjects.EigenDecomposite(src, eigenImages, avg);
@@ -123,8 +110,6 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Get the Euclidean eigen-distance between <paramref name="image"/> and every other image in the database
         /// </summary>
-        /// <param name="image">The image to be compared from the training images</param>
-        /// <returns>An array of eigen distance from every image in the training images</returns>
         public float[] GetEigenDistances(Bitmap image)
         {
             var decomp = EigenDecomposite(image, this.EigenImages, this.AverageImage);
@@ -150,10 +135,6 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Given the <paramref name="image"/> to be examined, find in the database the most similar object, return the index and the eigen distance
         /// </summary>
-        /// <param name="image">The image to be searched from the database</param>
-        /// <param name="index">The index of the most similar object</param>
-        /// <param name="eigenDistance">The eigen distance of the most similar object</param>
-        /// <param name="label">The label of the specific image</param>
         public void FindMostSimilarObject(Bitmap image, out int index, out float eigenDistance, out string label)
         {
             float[] dist = this.GetEigenDistances(image);
@@ -176,12 +157,6 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Try to recognize the image and return its label
         /// </summary>
-        /// <param name="image">The image to be recognized</param>
-        /// <param name="eigenDistance">The eigndistance to the best matched image</param>
-        /// <returns>
-        /// String.Empty, if not recognized;
-        /// Label of the corresponding image, otherwise
-        /// </returns>
         public string Recognize(Bitmap image, out float eigenDistance)
         {
             int index;

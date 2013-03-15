@@ -34,14 +34,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Emgu.CV, Version=2.2.1.1150, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\_Manual\Emgu.CV\Emgu.CV.dll</HintPath>
-    </Reference>
-    <Reference Include="Emgu.Util, Version=2.2.1.1150, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\_Manual\Emgu.CV\Emgu.Util.dll</HintPath>
-    </Reference>
     <Reference Include="Kinect.Toolbox">
       <HintPath>..\packages\KinectToolbox.1.2.1.1\lib\Kinect.Toolbox.dll</HintPath>
     </Reference>
@@ -125,74 +117,6 @@
   <ItemGroup>
     <Content Include="..\packages\KinectToolbox.1.2.1.1\content\FaceTrackLib.dll">
       <Link>FaceTrackLib.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cv110.dll">
-      <Link>cv110.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cvaux110.dll">
-      <Link>cvaux110.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cvextern.dll">
-      <Link>cvextern.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\cxcore110.dll">
-      <Link>cxcore110.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_calib3d220.dll">
-      <Link>opencv_calib3d220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_contrib220.dll">
-      <Link>opencv_contrib220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_core220.dll">
-      <Link>opencv_core220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_features2d220.dll">
-      <Link>opencv_features2d220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_ffmpeg220.dll">
-      <Link>opencv_ffmpeg220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_flann220.dll">
-      <Link>opencv_flann220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_gpu220.dll">
-      <Link>opencv_gpu220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_highgui220.dll">
-      <Link>opencv_highgui220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_imgproc220.dll">
-      <Link>opencv_imgproc220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_legacy220.dll">
-      <Link>opencv_legacy220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_ml220.dll">
-      <Link>opencv_ml220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_objdetect220.dll">
-      <Link>opencv_objdetect220.dll</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\_Manual\Emgu.CV\opencv_video220.dll">
-      <Link>opencv_video220.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="..\packages\_Manual\Kinect\FaceTrackData.dll">

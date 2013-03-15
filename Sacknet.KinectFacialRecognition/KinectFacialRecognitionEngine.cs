@@ -5,11 +5,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
-using Emgu.CV;
-using Emgu.CV.Structure;
 using Microsoft.Kinect;
 using Microsoft.Kinect.Toolkit.FaceTracking;
 
@@ -75,7 +71,7 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Gets the facial recognition engine
         /// </summary>
-        protected EigenObjectRecognizer Recognizer { get; private set; }
+        protected ManagedEigenObjectRecognizer Recognizer { get; private set; }
 
         /// <summary>
         /// Loads the given target faces into the eigen object recognizer
@@ -91,20 +87,13 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
         /// <param name="threshold">Eigen distance threshold for a match.  1500-2000 is a reasonable value.  0 will never match.</param>
-        public virtual void SetTargetFaces(IEnumerable<TargetFace> faces, int threshold)
+        public virtual void SetTargetFaces(IEnumerable<TargetFace> faces, double threshold)
         {
             lock (this.ProcessingMutex)
             {
-                if (this.Recognizer != null)
-                {
-                    this.Recognizer.Dispose();
-                    this.Recognizer = null;
-                }
-
                 if (faces != null && faces.Any())
                 {
-                    var termCrit = new MCvTermCriteria(faces.Count(), 0.001);
-                    this.Recognizer = new EigenObjectRecognizer(faces, threshold, ref termCrit);
+                    this.Recognizer = new ManagedEigenObjectRecognizer(faces, threshold);
                 }
             }
         }
@@ -219,75 +208,71 @@ namespace Sacknet.KinectFacialRecognition
 
             lock (this.ProcessingMutex)
             {
-                using (var origImage = new Image<Bgr, byte>(result.OriginalBitmap))
+                GraphicsPath origPath;
+
+                using (var g = Graphics.FromImage(result.ProcessedBitmap))
                 {
-                    using (var g = Graphics.FromImage(result.ProcessedBitmap))
+                    // Create a path tracing the face and draw on the processed image
+                    origPath = new GraphicsPath();
+
+                    foreach (var point in trackingResults.FaceBoundaryPoints().Select(x => this.TranslatePoint(x)))
                     {
-                        // Create a path tracing the face and draw on the processed image
-                        var origPath = new GraphicsPath();
+                        origPath.AddLine(point, point);
+                    }
 
-                        foreach (var point in trackingResults.FaceBoundaryPoints().Select(x => this.TranslatePoint(x)))
+                    origPath.CloseFigure();
+                    g.DrawPath(new Pen(Color.Red, 2), origPath);
+                }
+
+                var minX = (int)origPath.PathPoints.Min(x => x.X);
+                var maxX = (int)origPath.PathPoints.Max(x => x.X);
+                var minY = (int)origPath.PathPoints.Min(x => x.Y);
+                var maxY = (int)origPath.PathPoints.Max(x => x.Y);
+                var width = maxX - minX;
+                var height = maxY - minY;
+
+                // Create a cropped path tracing the face...
+                var croppedPath = new GraphicsPath();
+
+                foreach (var point in trackingResults.FaceBoundaryPoints().Select(x => this.TranslatePoint(x)))
+                {
+                    var croppedPoint = new System.Drawing.Point(point.X - minX, point.Y - minY);
+                    croppedPath.AddLine(croppedPoint, croppedPoint);
+                }
+
+                croppedPath.CloseFigure();
+
+                // ...and create a cropped image to use for facial recognition
+                using (var croppedBmp = new Bitmap(width, height))
+                {
+                    using (var croppedG = Graphics.FromImage(croppedBmp))
+                    {
+                        croppedG.FillRectangle(Brushes.Gray, 0, 0, width, height);
+                        croppedG.SetClip(croppedPath);
+                        croppedG.DrawImage(result.OriginalBitmap, minX * -1, minY * -1);
+                    }
+
+                    using (var grayBmp = croppedBmp.MakeGrayscale(100, 100))
+                    {
+                        grayBmp.HistogramEqualize();
+
+                        string key = null;
+                        float eigenDistance = -1;
+
+                        if (this.Recognizer != null)
+                            key = this.Recognizer.Recognize(grayBmp, out eigenDistance);
+
+                        // Save detection info
+                        result.Faces = new List<RecognitionResult.Face>()
                         {
-                            origPath.AddLine(point, point);
-                        }
-
-                        origPath.CloseFigure();
-                        g.DrawPath(new Pen(Color.Red, 2), origPath);
-
-                        var minX = (int)origPath.PathPoints.Min(x => x.X);
-                        var maxX = (int)origPath.PathPoints.Max(x => x.X);
-                        var minY = (int)origPath.PathPoints.Min(x => x.Y);
-                        var maxY = (int)origPath.PathPoints.Max(x => x.Y);
-                        var width = maxX - minX;
-                        var height = maxY - minY;
-
-                        // Create a cropped path tracing the face...
-                        var croppedPath = new GraphicsPath();
-
-                        foreach (var point in trackingResults.FaceBoundaryPoints().Select(x => this.TranslatePoint(x)))
-                        {
-                            var croppedPoint = new System.Drawing.Point(point.X - minX, point.Y - minY);
-                            croppedPath.AddLine(croppedPoint, croppedPoint);
-                        }
-
-                        croppedPath.CloseFigure();
-
-                        // ...and create a cropped image to use for facial recognition
-                        using (var croppedBmp = new Bitmap(width, height))
-                        {
-                            using (var croppedG = Graphics.FromImage(croppedBmp))
+                            new RecognitionResult.Face()
                             {
-                                croppedG.FillRectangle(Brushes.Gray, 0, 0, width, height);
-                                croppedG.SetClip(croppedPath);
-                                croppedG.DrawImage(result.OriginalBitmap, minX * -1, minY * -1);
+                                TrackingResults = trackingResults,
+                                EigenDistance = eigenDistance,
+                                GrayFace = (Bitmap)grayBmp.Clone(),
+                                Key = key
                             }
-
-                            using (var croppedImage = new Image<Bgr, byte>(croppedBmp))
-                            {
-                                using (var croppedGrey = croppedImage.Convert<Gray, byte>().Resize(100, 100, Emgu.CV.CvEnum.INTER.CV_INTER_CUBIC))
-                                {
-                                    croppedGrey._EqualizeHist();
-
-                                    string key = null;
-                                    float eigenDistance = -1;
-
-                                    if (this.Recognizer != null)
-                                        key = this.Recognizer.Recognize(croppedGrey, out eigenDistance);
-
-                                    // Save detection info
-                                    result.Faces = new List<RecognitionResult.Face>()
-                                    {
-                                        new RecognitionResult.Face()
-                                        {
-                                            TrackingResults = trackingResults,
-                                            EigenDistance = eigenDistance,
-                                            GrayFace = croppedGrey.ToBitmap(),
-                                            Key = key
-                                        }
-                                    };
-                                }
-                            }
-                        }
+                        };
                     }
                 }
             }

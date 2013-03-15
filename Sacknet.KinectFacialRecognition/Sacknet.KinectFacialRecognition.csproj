@@ -34,12 +34,6 @@
     <DocumentationFile>bin\Release\Sacknet.KinectFacialRecognition.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Emgu.CV">
-      <HintPath>..\packages\_Manual\Emgu.CV\Emgu.CV.dll</HintPath>
-    </Reference>
-    <Reference Include="Emgu.Util">
-      <HintPath>..\packages\_Manual\Emgu.CV\Emgu.Util.dll</HintPath>
-    </Reference>
     <Reference Include="Kinect.Toolbox">
       <HintPath>..\packages\KinectToolbox.1.2.1.1\lib\Kinect.Toolbox.dll</HintPath>
     </Reference>
@@ -65,10 +59,10 @@
   <ItemGroup>
     <Compile Include="AllFramesReadyFrameSource.cs" />
     <Compile Include="FloatImage.cs" />
+    <Compile Include="BitmapExtensions.cs" />
     <Compile Include="ManagedEigenObjectRecognizer.cs" />
     <Compile Include="ManagedEigenObjects.cs" />
     <Compile Include="RecognitionResult.cs" />
-    <Compile Include="EigenObjectRecognizer.cs" />
     <Compile Include="FrameData.cs" />
     <Compile Include="IFrameSource.cs" />
     <Compile Include="KinectFacialRecognitionEngine.cs" />
