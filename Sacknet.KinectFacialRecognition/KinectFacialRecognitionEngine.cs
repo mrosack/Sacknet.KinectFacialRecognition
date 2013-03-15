@@ -59,19 +59,19 @@ namespace Sacknet.KinectFacialRecognition
         public bool ProcessingEnabled { get; set; }
 
         /// <summary>
-        /// Gets the active Kinect sensor
-        /// </summary>
-        protected KinectSensor Kinect { get; private set; }
-
-        /// <summary>
         /// Gets a mutex that prevents the target faces from being updated during processing and vice-versa
         /// </summary>
         protected object ProcessingMutex { get; private set; }
 
         /// <summary>
-        /// Gets the facial recognition engine
+        /// Gets the active facial recognition processor
         /// </summary>
-        protected ManagedEigenObjectRecognizer Recognizer { get; private set; }
+        protected FacialRecognitionProcessor Processor { get; private set; }
+
+        /// <summary>
+        /// Gets the active Kinect sensor
+        /// </summary>
+        protected KinectSensor Kinect { get; private set; }
 
         /// <summary>
         /// Loads the given target faces into the eigen object recognizer
@@ -93,7 +93,7 @@ namespace Sacknet.KinectFacialRecognition
             {
                 if (faces != null && faces.Any())
                 {
-                    this.Recognizer = new ManagedEigenObjectRecognizer(faces, threshold);
+                    this.Processor = new FacialRecognitionProcessor(faces, threshold);
                 }
             }
         }
@@ -177,13 +177,15 @@ namespace Sacknet.KinectFacialRecognition
 
                     if (faceTrackFrame.TrackSuccessful)
                     {
-                        var trackingResults = new TrackingResults
-                        {
-                            FacePoints = faceTrackFrame.GetProjected3DShape(),
-                            FaceRect = faceTrackFrame.FaceRect
-                        };
+                        var trackingResults = new TrackingResults(faceTrackFrame.GetProjected3DShape());
 
-                        this.Process(result, trackingResults);
+                        lock (this.ProcessingMutex)
+                        {
+                            if (this.Processor != null && this.ProcessingEnabled)
+                            {
+                                this.Processor.Process(result, trackingResults);
+                            }
+                        }
                     }
                 }
             }
@@ -199,86 +201,6 @@ namespace Sacknet.KinectFacialRecognition
         }
 
         /// <summary>
-        /// Attempt to find a trained face in the original bitmap
-        /// </summary>
-        private void Process(RecognitionResult result, TrackingResults trackingResults)
-        {
-            if (!this.ProcessingEnabled)
-                return;
-
-            lock (this.ProcessingMutex)
-            {
-                GraphicsPath origPath;
-
-                using (var g = Graphics.FromImage(result.ProcessedBitmap))
-                {
-                    // Create a path tracing the face and draw on the processed image
-                    origPath = new GraphicsPath();
-
-                    foreach (var point in trackingResults.FaceBoundaryPoints().Select(x => this.TranslatePoint(x)))
-                    {
-                        origPath.AddLine(point, point);
-                    }
-
-                    origPath.CloseFigure();
-                    g.DrawPath(new Pen(Color.Red, 2), origPath);
-                }
-
-                var minX = (int)origPath.PathPoints.Min(x => x.X);
-                var maxX = (int)origPath.PathPoints.Max(x => x.X);
-                var minY = (int)origPath.PathPoints.Min(x => x.Y);
-                var maxY = (int)origPath.PathPoints.Max(x => x.Y);
-                var width = maxX - minX;
-                var height = maxY - minY;
-
-                // Create a cropped path tracing the face...
-                var croppedPath = new GraphicsPath();
-
-                foreach (var point in trackingResults.FaceBoundaryPoints().Select(x => this.TranslatePoint(x)))
-                {
-                    var croppedPoint = new System.Drawing.Point(point.X - minX, point.Y - minY);
-                    croppedPath.AddLine(croppedPoint, croppedPoint);
-                }
-
-                croppedPath.CloseFigure();
-
-                // ...and create a cropped image to use for facial recognition
-                using (var croppedBmp = new Bitmap(width, height))
-                {
-                    using (var croppedG = Graphics.FromImage(croppedBmp))
-                    {
-                        croppedG.FillRectangle(Brushes.Gray, 0, 0, width, height);
-                        croppedG.SetClip(croppedPath);
-                        croppedG.DrawImage(result.OriginalBitmap, minX * -1, minY * -1);
-                    }
-
-                    using (var grayBmp = croppedBmp.MakeGrayscale(100, 100))
-                    {
-                        grayBmp.HistogramEqualize();
-
-                        string key = null;
-                        float eigenDistance = -1;
-
-                        if (this.Recognizer != null)
-                            key = this.Recognizer.Recognize(grayBmp, out eigenDistance);
-
-                        // Save detection info
-                        result.Faces = new List<RecognitionResult.Face>()
-                        {
-                            new RecognitionResult.Face()
-                            {
-                                TrackingResults = trackingResults,
-                                EigenDistance = eigenDistance,
-                                GrayFace = (Bitmap)grayBmp.Clone(),
-                                Key = key
-                            }
-                        };
-                    }
-                }
-            }
-        }
-
-        /// <summary>
         /// Transforms a Kinect ColorImageFrame to a bitmap (why is this so hard?)
         /// </summary>
         private Bitmap ImageToBitmap(byte[] buffer, int width, int height)
@@ -289,14 +211,6 @@ namespace Sacknet.KinectFacialRecognition
             Marshal.Copy(buffer, 0, ptr, buffer.Length);
             bmap.UnlockBits(bmapdata);
             return bmap;
-        }
-
-        /// <summary>
-        /// Translates between kinect and drawing points
-        /// </summary>
-        private System.Drawing.Point TranslatePoint(Microsoft.Kinect.Toolkit.FaceTracking.PointF point)
-        {
-            return new System.Drawing.Point((int)point.X, (int)point.Y);
         }
     }
 }
