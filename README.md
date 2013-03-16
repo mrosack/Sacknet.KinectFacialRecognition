@@ -3,7 +3,7 @@ Sacknet.KinectFacialRecognition
 
 A facial recognition implementation for the Kinect for Windows API.  Based
 on the Open CV EigenObjectRecognizer, but translated to managed C# so
-Emgu CV is no longer required!
+Emgu CV and all the nasty Open CV DLLs are no longer required!
 
 
 Installation
@@ -12,11 +12,9 @@ Installation
 Since the library no longer uses Emgu CV, installation is much easier!
 
 - Step 1: Install Sacknet.KinectFacialRecognition from Nuget
-- Step 2: Add links to FaceTrackLib.dll (in the content folder of the
-  KinectToolbox package) and FaceTrackData.dll (you can get it from 
-  packages\_Manual\Kinect in the git repository or from the Kinect for
-  Windows toolkit projects).  Make sure to change the file properties to
-  always copy to the output directory.
+- Step 2: FaceTrackLib.dll and FaceTrackData.dll should be installed as
+  content files in the root of your project.  Make sure they're set to
+  copy to the output directory.
 
 
 Usage

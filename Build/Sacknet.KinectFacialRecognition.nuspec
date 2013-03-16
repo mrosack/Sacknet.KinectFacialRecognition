@@ -2,14 +2,14 @@
 <package>
   <metadata>
     <id>Sacknet.KinectFacialRecognition</id>
-    <version>0.1.1</version>
+    <version>0.2</version>
     <title>Sacknet.KinectFacialRecognition</title>
     <authors>Mike Rosack</authors>
     <owners>Mike Rosack</owners>
     <licenseUrl>http://www.opensource.org/licenses/MS-PL</licenseUrl>
     <projectUrl>https://github.com/mrosack/Sacknet.KinectFacialRecognition</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>A facial recognition implementation for the Kinect for Windows API.</description>
+    <description>A managed facial recognition implementation for the Kinect for Windows API.</description>
     <releaseNotes></releaseNotes>
     <tags>Kinect Face Facial Recognition PCA</tags>
 	<dependencies>
