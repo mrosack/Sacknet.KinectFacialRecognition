@@ -51,10 +51,14 @@ namespace Sacknet.KinectFacialRecognition
                 // Set the color matrix attribute
                 attributes.SetColorMatrix(colorMatrix);
 
+                // Fixes "ringing" around the borders...
+                attributes.SetWrapMode(WrapMode.TileFlipXY);
+
                 // Draw the original image on the new image using the grayscale color matrix
-                g.CompositingQuality = CompositingQuality.HighQuality;
+                g.CompositingMode = CompositingMode.SourceCopy;
                 g.SmoothingMode = SmoothingMode.HighQuality;
                 g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                 g.DrawImage(original, new Rectangle(0, 0, newWidth, newHeight), 0, 0, original.Width, original.Height, GraphicsUnit.Pixel, attributes);
             }
 

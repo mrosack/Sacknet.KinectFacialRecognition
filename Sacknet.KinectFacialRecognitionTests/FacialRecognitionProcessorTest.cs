@@ -48,7 +48,7 @@ namespace Sacknet.KinectFacialRecognitionTests
             Assert.AreEqual(1, recoResult.Faces.Count());
 
             var face = recoResult.Faces.First();
-            Assert.AreEqual(1037.2743, Math.Round(face.EigenDistance, 4));
+            Assert.AreEqual(789.8254, Math.Round(face.EigenDistance, 4));
             Assert.AreEqual(@".\train_mike_2.png", face.Key);
         }
     }
