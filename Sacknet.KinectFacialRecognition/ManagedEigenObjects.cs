@@ -76,7 +76,7 @@ namespace Sacknet.KinectFacialRecognition
             for (var i = 0; i < nObjects; i++)
             {
                 Bitmap obj = input[i];
-                objs[i] = CopyGrayscaleBitmapToByteArray(obj, out obj_step);
+                objs[i] = obj.CopyGrayscaleBitmapToByteArray(out obj_step);
                 obj_size = obj.Size;
 
                 if (obj_size != avg.Size || obj_size != old_size)
@@ -119,7 +119,7 @@ namespace Sacknet.KinectFacialRecognition
             int i;
 
             int obj_step;
-            byte[] obj_data = CopyGrayscaleBitmapToByteArray(obj, out obj_step);
+            byte[] obj_data = obj.CopyGrayscaleBitmapToByteArray(out obj_step);
             Size obj_size = obj.Size;
 
             /*cvGetImageRawData( avg, (uchar **) & avg_data, &avg_step, &avg_size );
@@ -243,32 +243,6 @@ namespace Sacknet.KinectFacialRecognition
             }
 
             return w;
-        }
-
-        /// <summary>
-        /// Copies a grayscale bitmap to a byte array
-        /// </summary>
-        private static byte[] CopyGrayscaleBitmapToByteArray(Bitmap bitmap, out int step)
-        {
-            var bits = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, bitmap.PixelFormat);
-            step = bits.Stride;
-
-            byte[] tempData = new byte[step * bitmap.Height];
-            Marshal.Copy(bits.Scan0, tempData, 0, tempData.Length);
-            bitmap.UnlockBits(bits);
-
-            if (bitmap.PixelFormat == System.Drawing.Imaging.PixelFormat.Format32bppArgb)
-            {
-                step /= 4;
-                byte[] result = new byte[step * bitmap.Height];
-
-                for (int i = 0; i < result.Length; i++)
-                    result[i] = tempData[i * 4];
-
-                return result;
-            }
-
-            return tempData;
         }
 
         /// <summary>

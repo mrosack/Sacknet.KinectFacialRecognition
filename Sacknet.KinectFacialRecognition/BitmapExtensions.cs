@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,6 +15,16 @@ namespace Sacknet.KinectFacialRecognition
     /// </summary>
     public static class BitmapExtensions
     {
+        /// <summary>
+        /// Little-endian Format32bppArgb is stored as BGRA
+        /// </summary>
+        private enum RGB
+        {
+            B = 0,
+            G = 1,
+            R = 2
+        }
+
         /// <summary>
         /// Converts a bitmap to grayscale.  Based on:
         /// http://tech.pro/tutorial/660/csharp-tutorial-convert-a-color-image-to-grayscale
@@ -51,31 +62,76 @@ namespace Sacknet.KinectFacialRecognition
         }
 
         /// <summary>
+        /// Copies a bitmap to a byte array
+        /// </summary>
+        public static byte[] CopyBitmapToByteArray(this Bitmap bitmap, out int step)
+        {
+            var bits = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, bitmap.PixelFormat);
+            step = bits.Stride;
+
+            byte[] result = new byte[step * bitmap.Height];
+            Marshal.Copy(bits.Scan0, result, 0, result.Length);
+            bitmap.UnlockBits(bits);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Copies a grayscale bitmap to a byte array
+        /// </summary>
+        public static byte[] CopyGrayscaleBitmapToByteArray(this Bitmap bitmap, out int step)
+        {
+            var baseResult = bitmap.CopyBitmapToByteArray(out step);
+
+            if (bitmap.PixelFormat == System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+            {
+                step /= 4;
+                byte[] result = new byte[step * bitmap.Height];
+
+                for (int i = 0; i < result.Length; i++)
+                    result[i] = baseResult[i * 4];
+
+                return result;
+            }
+
+            return baseResult;
+        }
+
+        /// <summary>
         /// Histogram equalizes the input bitmap
         /// </summary>
         public static void HistogramEqualize(this Bitmap bitmap)
         {
-            // Get the Lookup table for histogram equalization
-            var histLut = HistogramEqualizationLut(bitmap);
+            if (bitmap.PixelFormat != System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+                throw new ArgumentException("Input bitmap must be 32bppargb!");
 
-            for (int x = 0; x < bitmap.Width; x++)
+            int step;
+            var rawData = bitmap.CopyBitmapToByteArray(out step);
+
+            // Get the Lookup table for histogram equalization
+            var histLut = HistogramEqualizationLut(rawData);
+
+            for (int i = 0; i < rawData.Length; i += 4)
             {
-                for (int y = 0; y < bitmap.Height; y++)
-                {
-                    // Get pixels by R, G, B
-                    var origPixel = bitmap.GetPixel(x, y);
-                    bitmap.SetPixel(x, y, Color.FromArgb(histLut[0, origPixel.R], histLut[0, origPixel.G], histLut[0, origPixel.B]));
-                }
+                // Update pixels according to LUT
+                rawData[i + (int)RGB.R] = (byte)histLut[(int)RGB.R, rawData[i + (int)RGB.R]];
+                rawData[i + (int)RGB.G] = (byte)histLut[(int)RGB.G, rawData[i + (int)RGB.G]];
+                rawData[i + (int)RGB.B] = (byte)histLut[(int)RGB.B, rawData[i + (int)RGB.B]];
             }
+
+            // Copy bits back into the bitmap...
+            var bits = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, bitmap.PixelFormat);
+            Marshal.Copy(rawData, 0, bits.Scan0, rawData.Length);
+            bitmap.UnlockBits(bits);
         }
 
         /// <summary>
         /// Gets the histogram equalization lookup table for separate R, G, B channels
         /// </summary>
-        private static int[,] HistogramEqualizationLut(Bitmap input)
+        private static int[,] HistogramEqualizationLut(byte[] rawData)
         {
             // Get an image histogram - calculated values by R, G, B channels
-            int[,] imageHist = ImageHistogram(input);
+            int[,] imageHist = ImageHistogram(rawData);
 
             // Create the lookup table
             int[,] imageLut = new int[3, 256];
@@ -85,21 +141,21 @@ namespace Sacknet.KinectFacialRecognition
             long sumb = 0;
 
             // Calculate the scale factor
-            float scaleFactor = (float)(255.0 / (input.Width * input.Height));
+            float scaleFactor = (float)(255.0 / (rawData.Length / 4));
 
             for (int i = 0; i < 256; i++)
             {
-                sumr += imageHist[0, i];
+                sumr += imageHist[(int)RGB.R, i];
                 int valr = (int)(sumr * scaleFactor);
-                imageLut[0, i] = valr > 255 ? 255 : valr;
+                imageLut[(int)RGB.R, i] = valr > 255 ? 255 : valr;
 
-                sumg += imageHist[1, i];
+                sumg += imageHist[(int)RGB.G, i];
                 int valg = (int)(sumg * scaleFactor);
-                imageLut[1, i] = valg > 255 ? 255 : valg;
+                imageLut[(int)RGB.G, i] = valg > 255 ? 255 : valg;
 
-                sumb += imageHist[2, i];
+                sumb += imageHist[(int)RGB.B, i];
                 int valb = (int)(sumb * scaleFactor);
-                imageLut[2, i] = valb > 255 ? 255 : valb;
+                imageLut[(int)RGB.B, i] = valb > 255 ? 255 : valb;
             }
 
             return imageLut;
@@ -108,21 +164,15 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Returns an array containing histogram values for separate R, G, B channels
         /// </summary>
-        private static int[,] ImageHistogram(Bitmap input)
+        private static int[,] ImageHistogram(byte[] rawData)
         {
             var result = new int[3, 256];
 
-            for (int x = 0; x < input.Width; x++)
+            for (int i = 0; i < rawData.Length; i += 4)
             {
-                for (int y = 0; y < input.Height; y++)
-                {
-                    var pixel = input.GetPixel(x, y);
-
-                    // Increase the values of colors
-                    result[0, pixel.R]++;
-                    result[1, pixel.G]++;
-                    result[2, pixel.B]++;
-                }
+                result[(int)RGB.R, rawData[i + (int)RGB.R]]++;
+                result[(int)RGB.G, rawData[i + (int)RGB.G]]++;
+                result[(int)RGB.B, rawData[i + (int)RGB.B]]++;
             }
 
             return result;
