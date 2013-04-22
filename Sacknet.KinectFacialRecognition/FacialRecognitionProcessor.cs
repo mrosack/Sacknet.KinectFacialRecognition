@@ -14,6 +14,13 @@ namespace Sacknet.KinectFacialRecognition
     public class FacialRecognitionProcessor
     {
         /// <summary>
+        /// Initializes a new instance of the FacialRecognitionProcessor class without any trained faces
+        /// </summary>
+        public FacialRecognitionProcessor()
+        {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the FacialRecognitionProcessor class
         /// </summary>
         public FacialRecognitionProcessor(IEnumerable<TargetFace> faces)

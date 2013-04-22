@@ -40,6 +40,7 @@ namespace Sacknet.KinectFacialRecognition
             this.Kinect = kinect;
             this.ProcessingMutex = new object();
             this.ProcessingEnabled = true;
+            this.Processor = new FacialRecognitionProcessor();
             this.frameSource = frameSource;
             this.frameSource.FrameDataUpdated += this.FrameSource_FrameDataUpdated;
 

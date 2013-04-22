@@ -171,7 +171,7 @@ namespace Sacknet.KinectFacialRecognition
             int i;
 
             if (nEigObjs < 2)
-                throw new ApplicationException("CV_BADFACTOR_ERR");
+                throw new ApplicationException("Must have at least 2 training images for recognition!");
 
             if (size.Width > objStep || size.Width > eigStep || size.Width > avgStep || size.Height < 1)
                 throw new ApplicationException("CV_BADSIZE_ERR");
@@ -401,7 +401,7 @@ namespace Sacknet.KinectFacialRecognition
             /* ---- TEST OF PARAMETERS ---- */
 
             if (nObjects < 2)
-                throw new ApplicationException("CV_BADFACTOR_ERR");
+                throw new ApplicationException("Must have at least 2 training images for recognition!");
 
             if (size.Width > objStep || size.Width > avgStep || size.Height < 1)
                 throw new ApplicationException("CV_BADSIZE_ERR");

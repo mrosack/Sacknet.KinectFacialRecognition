@@ -101,7 +101,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
                     using (var g = Graphics.FromImage(e.ProcessedBitmap))
                     {
                         var rect = face.TrackingResults.FaceRect;
-                        g.DrawString(face.Key, new Font("Arial", 20), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top));
+                        g.DrawString(face.Key, new Font("Arial", 20), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
                     }
                 }
 
@@ -113,9 +113,11 @@ namespace Sacknet.KinectFacialRecognitionDemo
                         Key = this.NameField.Text
                     });
 
-                    this.engine.SetTargetFaces(this.targetFaces);
-
                     this.takeTrainingImage = false;
+                    this.NameField.Text = this.NameField.Text.Replace(this.targetFaces.Count.ToString(), (this.targetFaces.Count + 1).ToString());
+
+                    if (this.targetFaces.Count > 1)
+                        this.engine.SetTargetFaces(this.targetFaces);
                 }
             }
 
