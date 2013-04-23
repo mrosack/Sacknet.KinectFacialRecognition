@@ -61,6 +61,7 @@
     <Compile Include="FacialRecognitionProcessor.cs" />
     <Compile Include="FloatImage.cs" />
     <Compile Include="BitmapExtensions.cs" />
+    <Compile Include="ManagedEigenObjectException.cs" />
     <Compile Include="ManagedEigenObjectRecognizer.cs" />
     <Compile Include="ManagedEigenObjects.cs" />
     <Compile Include="RecognitionResult.cs" />

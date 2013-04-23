@@ -80,9 +80,9 @@ namespace Sacknet.KinectFacialRecognition
                 obj_size = obj.Size;
 
                 if (obj_size != avg.Size || obj_size != old_size)
-                    throw new ApplicationException("Different sizes of objects");
+                    throw new ManagedEigenObjectException("Different sizes of objects");
                 if (i > 0 && obj_step != old_step)
-                    throw new ApplicationException("Different steps of objects");
+                    throw new ManagedEigenObjectException("Different steps of objects");
 
                 old_step = obj_step;
                 old_size = obj_size;
@@ -95,9 +95,9 @@ namespace Sacknet.KinectFacialRecognition
                 eigs[i] = eig.Data;
 
                 if (eig.Size != avg.Size || eig.Size != oldeig_size)
-                    throw new ApplicationException("Different sizes of objects");
+                    throw new ManagedEigenObjectException("Different sizes of objects");
                 if (i > 0 && eig_step != oldeig_step)
-                    throw new ApplicationException("Different steps of objects");
+                    throw new ManagedEigenObjectException("Different steps of objects");
 
                 oldeig_step = eig.Step;
                 oldeig_size = eig.Size;
@@ -135,7 +135,7 @@ namespace Sacknet.KinectFacialRecognition
                 CV_ERROR( CV_BadNumChannels, cvUnsupportedFormat );*/
 
             if (obj_size != avg.Size)
-                throw new ApplicationException("Different sizes of objects");
+                throw new ManagedEigenObjectException("Different sizes of objects");
 
             float[][] eigs = new float[nEigObjs][];
             int eig_step = 0, old_step = 0;
@@ -148,9 +148,9 @@ namespace Sacknet.KinectFacialRecognition
                 eigs[i] = eig.Data;
 
                 if (eig_size != avg.Size || eig_size != old_size)
-                    throw new ApplicationException("Different sizes of objects");
+                    throw new ManagedEigenObjectException("Different sizes of objects");
                 if (i > 0 && eig_step != old_step)
-                    throw new ApplicationException("Different steps of objects");
+                    throw new ManagedEigenObjectException("Different steps of objects");
 
                 old_step = eig.Step;
                 old_size = eig.Size;
@@ -171,10 +171,10 @@ namespace Sacknet.KinectFacialRecognition
             int i;
 
             if (nEigObjs < 2)
-                throw new ApplicationException("Must have at least 2 training images for recognition!");
+                throw new ManagedEigenObjectException("Must have at least 2 training images for recognition!");
 
             if (size.Width > objStep || size.Width > eigStep || size.Width > avgStep || size.Height < 1)
-                throw new ApplicationException("CV_BADSIZE_ERR");
+                throw new ManagedEigenObjectException("CV_BADSIZE_ERR");
 
             /* no callback */
             for (i = 0; i < nEigObjs; i++)
@@ -182,7 +182,7 @@ namespace Sacknet.KinectFacialRecognition
                 float w = CalcDecompCoeff(obj, objStep, eigInput[i], eigStep, avg, avgStep, size);
 
                 if (w < -1.0e29f)
-                    throw new ApplicationException("NOT DEFINED?");
+                    throw new ManagedEigenObjectException("NOT DEFINED?");
 
                 coeffs[i] = w;
             }
@@ -266,9 +266,9 @@ namespace Sacknet.KinectFacialRecognition
             /* ---- TEST OF PARAMETERS ---- */
 
             if (nObjects < 2)
-                throw new ApplicationException("CV_BADFACTOR_ERR");
+                throw new ManagedEigenObjectException("CV_BADFACTOR_ERR");
             if (size.Width > objStep || size.Width > eigStep || size.Width > avgStep || size.Height < 1)
-                throw new ApplicationException("CV_BADSIZE_ERR");
+                throw new ManagedEigenObjectException("CV_BADSIZE_ERR");
 
             if (objStep == size.Width && eigStep == size.Width && avgStep == size.Width)
             {
@@ -401,10 +401,10 @@ namespace Sacknet.KinectFacialRecognition
             /* ---- TEST OF PARAMETERS ---- */
 
             if (nObjects < 2)
-                throw new ApplicationException("Must have at least 2 training images for recognition!");
+                throw new ManagedEigenObjectException("Must have at least 2 training images for recognition!");
 
             if (size.Width > objStep || size.Width > avgStep || size.Height < 1)
-                throw new ApplicationException("CV_BADSIZE_ERR");
+                throw new ManagedEigenObjectException("CV_BADSIZE_ERR");
 
             int i, j;
             byte[][] objects = input;
@@ -472,7 +472,7 @@ namespace Sacknet.KinectFacialRecognition
             double aMax, anorm = 0, ax;
 
             if (n <= 0)
-                throw new ApplicationException("CV_BADSIZE_ERR");
+                throw new ManagedEigenObjectException("CV_BADSIZE_ERR");
 
             if (eps < 1.0e-7f)
                 eps = 1.0e-7f;
