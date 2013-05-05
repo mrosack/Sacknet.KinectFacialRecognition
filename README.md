@@ -5,6 +5,9 @@ A facial recognition implementation for the Kinect for Windows API.  Based
 on the Open CV EigenObjectRecognizer, but translated to managed C# so
 Emgu CV and all the nasty Open CV DLLs are no longer required!
 
+NOTE: Now that the Kinect Toolkit includes both FaceTrackLib.dll and
+FaceTrackData.dll, this nuget package will no longer contain them.
+
 
 Installation
 ------------

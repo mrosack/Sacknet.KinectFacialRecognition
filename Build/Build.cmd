@@ -6,7 +6,6 @@ mkdir content
 
 msbuild.exe /ToolsVersion:4.0 "..\Sacknet.KinectFacialRecognition\Sacknet.KinectFacialRecognition.csproj" /p:configuration=Release /t:Rebuild
 copy ..\Sacknet.KinectFacialRecognition\bin\Release\Sacknet.KinectFacialRecognition.* lib\net40
-copy ..\packages\_Manual\Kinect\FaceTrackData.dll content
 copy ..\README.md README.txt
 NuGet pack Sacknet.KinectFacialRecognition.nuspec -Exclude *.cmd
 pause

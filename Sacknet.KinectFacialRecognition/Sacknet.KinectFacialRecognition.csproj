@@ -34,18 +34,21 @@
     <DocumentationFile>bin\Release\Sacknet.KinectFacialRecognition.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Kinect.Toolbox">
-      <HintPath>..\packages\KinectToolbox.1.2.1.1\lib\Kinect.Toolbox.dll</HintPath>
+    <Reference Include="Kinect.Toolbox, Version=1.3.0.0, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\KinectToolbox.1.3.0.0\lib\Kinect.Toolbox.dll</HintPath>
     </Reference>
-    <Reference Include="Kinect.Toolbox.Voice">
-      <HintPath>..\packages\KinectToolbox.1.2.1.1\lib\Kinect.Toolbox.Voice.dll</HintPath>
+    <Reference Include="Kinect.Toolbox.Voice, Version=1.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\KinectToolbox.1.3.0.0\lib\Kinect.Toolbox.Voice.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Kinect, Version=1.6.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\_Manual\Kinect\Microsoft.Kinect.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Kinect.Toolkit.FaceTracking">
-      <HintPath>..\packages\KinectToolbox.1.2.1.1\lib\Microsoft.Kinect.Toolkit.FaceTracking.dll</HintPath>
+    <Reference Include="Microsoft.Kinect.Toolkit.FaceTracking, Version=0.0.0.0, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\KinectToolbox.1.3.0.0\lib\Microsoft.Kinect.Toolkit.FaceTracking.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -74,6 +77,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="FaceTrackData.dll" />
+    <Content Include="FaceTrackLib.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
