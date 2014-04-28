@@ -34,6 +34,8 @@ you have to do is:
 - Listen to the RecognitionComplete event to get the results - if there's a
   match, the key will be set on the recognized face in the RecognitionResult
 
+**If the demo project isn't working, try standing up - usually the
+Kinect skeleton tracking doesn't kick in while you're seated!**
 
 Limitations/Todo
 ----
