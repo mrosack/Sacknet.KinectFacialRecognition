@@ -10,3 +10,4 @@ obj
 /Build/*.txt
 /TestResults
 /Build/content
+/packages

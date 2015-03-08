@@ -1,11 +1,20 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sacknet.KinectFacialRecognition", "Sacknet.KinectFacialRecognition\Sacknet.KinectFacialRecognition.csproj", "{D10C23EC-AB96-4103-9D53-0C2089A3BCFB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sacknet.KinectFacialRecognitionDemo", "Sacknet.KinectFacialRecognitionDemo\Sacknet.KinectFacialRecognitionDemo.csproj", "{7DEB49BA-7C81-44E8-B68E-F7BD0A7C10F1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sacknet.KinectFacialRecognitionTests", "Sacknet.KinectFacialRecognitionTests\Sacknet.KinectFacialRecognitionTests.csproj", "{14E8FEC6-B95E-4F00-BDD1-F4FC5322180F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{312F2311-991E-429E-A728-038A1F6B2DBA}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

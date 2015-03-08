@@ -26,32 +26,17 @@ namespace Sacknet.KinectFacialRecognitionDemo
         /// </summary>
         public MainWindow()
         {
-            KinectSensor kinectSensor = null;
+            KinectSensor kinectSensor = KinectSensor.GetDefault();
+            kinectSensor.Open();
 
-            // loop through all the Kinects attached to this PC, and start the first that is connected without an error.
-            foreach (KinectSensor kinect in KinectSensor.KinectSensors)
-            {
-                if (kinect.Status == KinectStatus.Connected)
-                {
-                    kinectSensor = kinect;
-                    break;
-                }
-            }
-
-            if (kinectSensor == null)
+            if (!kinectSensor.IsOpen)
             {
                 MessageBox.Show("No Kinect found...");
                 Application.Current.Shutdown();
                 return;
             }
 
-            kinectSensor.SkeletonStream.Enable();
-            kinectSensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
-            kinectSensor.DepthStream.Enable(DepthImageFormat.Resolution640x480Fps30);
-            kinectSensor.Start();
-
-            AllFramesReadyFrameSource frameSource = new AllFramesReadyFrameSource(kinectSensor);
-            this.engine = new KinectFacialRecognitionEngine(kinectSensor, frameSource);
+            this.engine = new KinectFacialRecognitionEngine(kinectSensor);
             this.engine.RecognitionComplete += this.Engine_RecognitionComplete;
 
             this.InitializeComponent();
@@ -74,6 +59,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
                 bs = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(ip,
                    IntPtr.Zero, Int32Rect.Empty,
                    System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                bs.Freeze();
             }
             finally
             {
@@ -101,7 +87,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
                     using (var g = Graphics.FromImage(e.ProcessedBitmap))
                     {
                         var rect = face.TrackingResults.FaceRect;
-                        g.DrawString(face.Key, new Font("Arial", 20), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
+                        g.DrawString(face.Key, new Font("Arial", 100), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
                     }
                 }
 
@@ -122,6 +108,9 @@ namespace Sacknet.KinectFacialRecognitionDemo
             }
 
             this.Video.Source = LoadBitmap(e.ProcessedBitmap);
+            
+            // Without an explicit call to GC.Collect here, memory runs out of control :(
+            GC.Collect();
         }
 
         /// <summary>

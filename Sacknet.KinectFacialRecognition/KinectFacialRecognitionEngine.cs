@@ -7,7 +7,7 @@ using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Kinect;
-using Microsoft.Kinect.Toolkit.FaceTracking;
+using Microsoft.Kinect.Face;
 
 namespace Sacknet.KinectFacialRecognition
 {
@@ -16,33 +16,42 @@ namespace Sacknet.KinectFacialRecognition
     /// </summary>
     public class KinectFacialRecognitionEngine : IDisposable
     {
-        private IFrameSource frameSource;
         private BackgroundWorker recognizerWorker;
 
         private int imageWidth, imageHeight;
         
         private byte[] colorImageBuffer;
-        private ColorImageFormat colorImageFormat;
+        private FaceModel faceModel;
+        private FaceAlignment faceAlignment = new FaceAlignment();
 
-        private short[] depthImageBuffer;
-        private DepthImageFormat depthImageFormat;
+        private Body[] bodies;
+        private MultiSourceFrameReader msReader;
 
-        private Skeleton trackedSkeleton;
-        private int previousTrackedSkeletonId = -1;
-
-        private FaceTracker faceTracker;
+        private HighDefinitionFaceFrameSource faceSource;
+        private HighDefinitionFaceFrameReader faceReader;
 
         /// <summary>
         /// Initializes a new instance of the KinectFacialRecognitionEngine class
         /// </summary>
-        public KinectFacialRecognitionEngine(KinectSensor kinect, IFrameSource frameSource)
+        public KinectFacialRecognitionEngine(KinectSensor kinect)
         {
             this.Kinect = kinect;
+
+            this.bodies = new Body[kinect.BodyFrameSource.BodyCount];
+            this.colorImageBuffer = new byte[4 * kinect.ColorFrameSource.FrameDescription.LengthInPixels];
+            this.imageWidth = kinect.ColorFrameSource.FrameDescription.Width;
+            this.imageHeight = kinect.ColorFrameSource.FrameDescription.Height;
+
+            this.msReader = this.Kinect.OpenMultiSourceFrameReader(FrameSourceTypes.Body | FrameSourceTypes.Color);
+            this.msReader.MultiSourceFrameArrived += this.MultiSourceFrameArrived;
+
+            this.faceSource = new HighDefinitionFaceFrameSource(kinect);
+            this.faceReader = this.faceSource.OpenReader();
+            this.faceReader.FrameArrived += this.FaceFrameArrived;
+
             this.ProcessingMutex = new object();
             this.ProcessingEnabled = true;
             this.Processor = new FacialRecognitionProcessor();
-            this.frameSource = frameSource;
-            this.frameSource.FrameDataUpdated += this.FrameSource_FrameDataUpdated;
 
             this.recognizerWorker = new BackgroundWorker();
             this.recognizerWorker.DoWork += this.RecognizerWorker_DoWork;
@@ -104,33 +113,73 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         public void Dispose()
         {
-            this.frameSource.FrameDataUpdated -= this.FrameSource_FrameDataUpdated;
+            this.msReader.MultiSourceFrameArrived -= this.MultiSourceFrameArrived;
+            this.msReader.Dispose();
+
+            this.faceReader.FrameArrived -= this.FaceFrameArrived;
+            this.faceReader.Dispose();
         }
 
         /// <summary>
-        /// Performs recognition on a new frame of data
+        /// Handles face frame updates
         /// </summary>
-        private void FrameSource_FrameDataUpdated(object sender, FrameData e)
+        private void FaceFrameArrived(object sender, HighDefinitionFaceFrameArrivedEventArgs e)
         {
-            if (!this.recognizerWorker.IsBusy)
+            if (this.recognizerWorker.IsBusy)
+                return;
+
+            lock (this)
             {
-                if (this.colorImageBuffer == null || this.colorImageBuffer.Length != e.ColorFrame.PixelDataLength)
-                    this.colorImageBuffer = new byte[e.ColorFrame.PixelDataLength];
+                this.faceModel = null;
 
-                e.ColorFrame.CopyPixelDataTo(this.colorImageBuffer);
-                this.colorImageFormat = e.ColorFrame.Format;
-                this.imageWidth = e.ColorFrame.Width;
-                this.imageHeight = e.ColorFrame.Height;
+                using (var frame = e.FrameReference.AcquireFrame())
+                {
+                    if (frame != null && frame.IsTrackingIdValid && frame.IsFaceTracked)
+                    {
+                        frame.GetAndRefreshFaceAlignmentResult(this.faceAlignment);
+                        this.faceModel = frame.FaceModel;
+                    }
+                }
+            }
 
-                if (this.depthImageBuffer == null || this.depthImageBuffer.Length != e.DepthFrame.PixelDataLength)
-                    this.depthImageBuffer = new short[e.DepthFrame.PixelDataLength];
+            this.recognizerWorker.RunWorkerAsync(e);
+        }
 
-                e.DepthFrame.CopyPixelDataTo(this.depthImageBuffer);
-                this.depthImageFormat = e.DepthFrame.Format;
+        /// <summary>
+        /// Handles body/color frame updates
+        /// </summary>
+        private void MultiSourceFrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
+        {
+            if (this.recognizerWorker.IsBusy)
+                return;
 
-                this.trackedSkeleton = e.TrackedSkeleton;
+            lock (this)
+            {
+                var msFrame = e.FrameReference.AcquireFrame();
 
-                this.recognizerWorker.RunWorkerAsync(e);
+                using (var colorFrame = msFrame.ColorFrameReference.AcquireFrame())
+                {
+                    if (colorFrame != null)
+                    {
+                        if (colorFrame.RawColorImageFormat == ColorImageFormat.Bgra)
+                            colorFrame.CopyRawFrameDataToArray(this.colorImageBuffer);
+                        else
+                            colorFrame.CopyConvertedFrameDataToArray(this.colorImageBuffer, ColorImageFormat.Bgra);
+                    }
+                }
+
+                using (var bodyFrame = msFrame.BodyFrameReference.AcquireFrame())
+                {
+                    if (bodyFrame != null)
+                    {
+                        bodyFrame.GetAndRefreshBodyData(this.bodies);
+
+                        var trackedBody = this.bodies.Where(b => b.IsTracked).FirstOrDefault();
+
+                        if (!this.faceSource.IsTrackingIdValid && trackedBody != null)
+                            this.faceSource.TrackingId = trackedBody.TrackingId;
+                    }
+                }
             }
         }
 
@@ -144,49 +193,16 @@ namespace Sacknet.KinectFacialRecognition
             result.ProcessedBitmap = (Bitmap)result.OriginalBitmap.Clone();
             e.Result = result;
 
-            if (this.trackedSkeleton != null && this.trackedSkeleton.TrackingState == SkeletonTrackingState.Tracked)
+            if (this.faceModel != null)
             {
-                // Reset the face tracker if we lost our old skeleton...
-                if (this.trackedSkeleton.TrackingId != this.previousTrackedSkeletonId && this.faceTracker != null)
-                    this.faceTracker.ResetTracking();
+                var vertices = this.faceModel.CalculateVerticesForAlignment(this.faceAlignment);
+                var trackingResults = new TrackingResults(vertices, this.Kinect.CoordinateMapper);
 
-                this.previousTrackedSkeletonId = this.trackedSkeleton.TrackingId;
-
-                if (this.faceTracker == null)
+                lock (this.ProcessingMutex)
                 {
-                    try
+                    if (this.Processor != null && this.ProcessingEnabled)
                     {
-                        this.faceTracker = new FaceTracker(this.Kinect);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // During some shutdown scenarios the FaceTracker
-                        // is unable to be instantiated.  Catch that exception
-                        // and don't track a face.
-                        this.faceTracker = null;
-                    }
-                }
-
-                if (this.faceTracker != null)
-                {
-                    var faceTrackFrame = this.faceTracker.Track(
-                        this.colorImageFormat,
-                        this.colorImageBuffer,
-                        this.depthImageFormat,
-                        this.depthImageBuffer,
-                        this.trackedSkeleton);
-
-                    if (faceTrackFrame.TrackSuccessful)
-                    {
-                        var trackingResults = new TrackingResults(faceTrackFrame.GetProjected3DShape());
-
-                        lock (this.ProcessingMutex)
-                        {
-                            if (this.Processor != null && this.ProcessingEnabled)
-                            {
-                                this.Processor.Process(result, trackingResults);
-                            }
-                        }
+                        this.Processor.Process(result, trackingResults);
                     }
                 }
             }
@@ -198,7 +214,18 @@ namespace Sacknet.KinectFacialRecognition
         private void RecognizerWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             if (this.RecognitionComplete != null)
-                this.RecognitionComplete(this, (RecognitionResult)e.Result);
+            {
+                var recoResult = (RecognitionResult)e.Result;
+
+                try
+                {
+                    this.RecognitionComplete(this, recoResult);
+                }
+                finally
+                {
+                    recoResult.Dispose();
+                }
+            }
         }
 
         /// <summary>
