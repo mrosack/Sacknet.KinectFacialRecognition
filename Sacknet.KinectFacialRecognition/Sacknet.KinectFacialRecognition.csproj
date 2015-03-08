@@ -72,6 +72,7 @@
     <Compile Include="FacialRecognitionProcessor.cs" />
     <Compile Include="FloatImage.cs" />
     <Compile Include="BitmapExtensions.cs" />
+    <Compile Include="IKinectFacialRecognitionEngine.cs" />
     <Compile Include="ManagedEigenObjectException.cs" />
     <Compile Include="ManagedEigenObjectRecognizer.cs" />
     <Compile Include="ManagedEigenObjects.cs" />
@@ -82,7 +83,6 @@
     <Compile Include="TrackingResults.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

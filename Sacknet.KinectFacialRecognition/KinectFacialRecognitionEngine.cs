@@ -14,7 +14,7 @@ namespace Sacknet.KinectFacialRecognition
     /// <summary>
     /// A facial recognition engine using the Kinect facial tracking system and principal component analysis for recognition
     /// </summary>
-    public class KinectFacialRecognitionEngine : IDisposable
+    public class KinectFacialRecognitionEngine : IKinectFacialRecognitionEngine, IDisposable
     {
         private BackgroundWorker recognizerWorker;
 

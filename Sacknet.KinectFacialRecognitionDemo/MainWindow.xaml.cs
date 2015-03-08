@@ -29,13 +29,6 @@ namespace Sacknet.KinectFacialRecognitionDemo
             KinectSensor kinectSensor = KinectSensor.GetDefault();
             kinectSensor.Open();
 
-            if (!kinectSensor.IsOpen)
-            {
-                MessageBox.Show("No Kinect found...");
-                Application.Current.Shutdown();
-                return;
-            }
-
             this.engine = new KinectFacialRecognitionEngine(kinectSensor);
             this.engine.RecognitionComplete += this.Engine_RecognitionComplete;
 
