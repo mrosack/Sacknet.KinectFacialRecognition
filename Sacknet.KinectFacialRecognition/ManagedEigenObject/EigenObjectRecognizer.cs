@@ -3,34 +3,35 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using Sacknet.KinectFacialRecognition.ManagedEigenObject;
 
-namespace Sacknet.KinectFacialRecognition
+namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
 {
     /// <summary>
     /// Based on the Emgu CV EigenObjectRecognizer, but converted to use fully managed objects.
     /// </summary>
-    public class ManagedEigenObjectRecognizer
+    public class EigenObjectRecognizer
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ManagedEigenObjectRecognizer"/> class.
+        /// Initializes a new instance of the <see cref="EigenObjectRecognizer"/> class.
         /// </summary>
-        public ManagedEigenObjectRecognizer(IEnumerable<TargetFace> targetFaces)
+        public EigenObjectRecognizer(IEnumerable<EigenObjectTargetFace> targetFaces)
             : this(targetFaces, 2000)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ManagedEigenObjectRecognizer"/> class.
+        /// Initializes a new instance of the <see cref="EigenObjectRecognizer"/> class.
         /// </summary>
-        public ManagedEigenObjectRecognizer(IEnumerable<TargetFace> targetFaces, double eigenDistanceThreshold)
+        public EigenObjectRecognizer(IEnumerable<EigenObjectTargetFace> targetFaces, double eigenDistanceThreshold)
             : this(targetFaces, eigenDistanceThreshold, targetFaces.Count(), 0.001)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ManagedEigenObjectRecognizer"/> class.
+        /// Initializes a new instance of the <see cref="EigenObjectRecognizer"/> class.
         /// </summary>
-        public ManagedEigenObjectRecognizer(IEnumerable<TargetFace> targetFaces, double eigenDistanceThreshold, int maxIter, double eps)
+        public EigenObjectRecognizer(IEnumerable<EigenObjectTargetFace> targetFaces, double eigenDistanceThreshold, int maxIter, double eps)
         {
             Debug.Assert(eigenDistanceThreshold >= 0.0, "Eigen-distance threshold should always >= 0.0");
 
@@ -96,7 +97,7 @@ namespace Sacknet.KinectFacialRecognition
 
             avg = new FloatImage(width, height);
 
-            ManagedEigenObjects.CalcEigenObjects(trainingImages, maxIter, eps, eigenImages, null, avg);
+            EigenObjects.CalcEigenObjects(trainingImages, maxIter, eps, eigenImages, null, avg);
         }
 
         /// <summary>
@@ -104,7 +105,7 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         public static float[] EigenDecomposite(Bitmap src, FloatImage[] eigenImages, FloatImage avg)
         {
-            return ManagedEigenObjects.EigenDecomposite(src, eigenImages, avg);
+            return EigenObjects.EigenDecomposite(src, eigenImages, avg);
         }
 
         /// <summary>

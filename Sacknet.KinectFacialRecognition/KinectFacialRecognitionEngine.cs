@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Kinect;
 using Microsoft.Kinect.Face;
+using Sacknet.KinectFacialRecognition.ManagedEigenObject;
 
 namespace Sacknet.KinectFacialRecognition
 {
@@ -51,7 +52,7 @@ namespace Sacknet.KinectFacialRecognition
 
             this.ProcessingMutex = new object();
             this.ProcessingEnabled = true;
-            this.Processor = new FacialRecognitionProcessor();
+            this.Processor = new EigenObjectRecognitionProcessor();
 
             this.recognizerWorker = new BackgroundWorker();
             this.recognizerWorker.DoWork += this.RecognizerWorker_DoWork;
@@ -76,7 +77,7 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Gets the active facial recognition processor
         /// </summary>
-        protected FacialRecognitionProcessor Processor { get; private set; }
+        protected EigenObjectRecognitionProcessor Processor { get; private set; }
 
         /// <summary>
         /// Gets the active Kinect sensor
@@ -87,7 +88,7 @@ namespace Sacknet.KinectFacialRecognition
         /// Loads the given target faces into the eigen object recognizer
         /// </summary>
         /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
-        public virtual void SetTargetFaces(IEnumerable<TargetFace> faces)
+        public virtual void SetTargetFaces(IEnumerable<EigenObjectTargetFace> faces)
         {
             this.SetTargetFaces(faces, 1750);
         }
@@ -97,13 +98,13 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
         /// <param name="threshold">Eigen distance threshold for a match.  1500-2000 is a reasonable value.  0 will never match.</param>
-        public virtual void SetTargetFaces(IEnumerable<TargetFace> faces, double threshold)
+        public virtual void SetTargetFaces(IEnumerable<EigenObjectTargetFace> faces, double threshold)
         {
             lock (this.ProcessingMutex)
             {
                 if (faces != null && faces.Any())
                 {
-                    this.Processor = new FacialRecognitionProcessor(faces, threshold);
+                    this.Processor = new EigenObjectRecognitionProcessor(faces, threshold);
                 }
             }
         }
@@ -196,7 +197,7 @@ namespace Sacknet.KinectFacialRecognition
             if (this.faceModel != null)
             {
                 var vertices = this.faceModel.CalculateVerticesForAlignment(this.faceAlignment);
-                var trackingResults = new TrackingResults(vertices, this.Kinect.CoordinateMapper);
+                var trackingResults = new KinectFaceTrackingResult(vertices, this.Kinect.CoordinateMapper);
 
                 lock (this.ProcessingMutex)
                 {

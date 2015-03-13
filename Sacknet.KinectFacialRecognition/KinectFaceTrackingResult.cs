@@ -8,9 +8,9 @@ using Microsoft.Kinect.Face;
 namespace Sacknet.KinectFacialRecognition
 {
     /// <summary>
-    /// Results from face tracking
+    /// Results from kinect face tracking
     /// </summary>
-    public class TrackingResults
+    public class KinectFaceTrackingResult
     {
         private static readonly List<int> BOUNDING_HIGH_DETAIL_FACE_POINTS = new List<int>
         {
@@ -22,16 +22,16 @@ namespace Sacknet.KinectFacialRecognition
         };
 
         /// <summary>
-        /// Initializes a new instance of the TrackingResults class
+        /// Initializes a new instance of the KinectFaceTrackingResult class
         /// </summary>
-        public TrackingResults()
+        public KinectFaceTrackingResult()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the TrackingResults class from a set of Kinect face points
+        /// Initializes a new instance of the KinectFaceTrackingResult class from a set of Kinect face points
         /// </summary>
-        public TrackingResults(IReadOnlyList<CameraSpacePoint> vertices, CoordinateMapper mapper)
+        public KinectFaceTrackingResult(IReadOnlyList<CameraSpacePoint> vertices, CoordinateMapper mapper)
         {
             this.FacePoints = this.FaceBoundaryPoints(vertices, mapper);
 
@@ -45,7 +45,7 @@ namespace Sacknet.KinectFacialRecognition
         }
 
         /// <summary>
-        /// Gets or sets the 3D points of the face
+        /// Gets or sets the outline of the face
         /// </summary>
         public List<System.Drawing.Point> FacePoints { get; set; }
 

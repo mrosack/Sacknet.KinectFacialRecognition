@@ -5,12 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sacknet.KinectFacialRecognition
+namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
 {
     /// <summary>
-    /// Describes a target face for facial recognition
+    /// Describes a target face for eigen object recognition
     /// </summary>
-    public class TargetFace
+    public class EigenObjectTargetFace
     {
         /// <summary>
         /// Gets or sets the key returned when this face is found

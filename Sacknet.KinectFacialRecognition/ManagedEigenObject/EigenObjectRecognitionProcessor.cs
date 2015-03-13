@@ -6,45 +6,45 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sacknet.KinectFacialRecognition
+namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
 {
     /// <summary>
     /// Performs facial recognition
     /// </summary>
-    public class FacialRecognitionProcessor
+    public class EigenObjectRecognitionProcessor
     {
         /// <summary>
-        /// Initializes a new instance of the FacialRecognitionProcessor class without any trained faces
+        /// Initializes a new instance of the EigenObjectRecognitionProcessor class without any trained faces
         /// </summary>
-        public FacialRecognitionProcessor()
+        public EigenObjectRecognitionProcessor()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the FacialRecognitionProcessor class
+        /// Initializes a new instance of the EigenObjectRecognitionProcessor class
         /// </summary>
-        public FacialRecognitionProcessor(IEnumerable<TargetFace> faces)
+        public EigenObjectRecognitionProcessor(IEnumerable<EigenObjectTargetFace> faces)
         {
-            this.Recognizer = new ManagedEigenObjectRecognizer(faces);
+            this.Recognizer = new EigenObjectRecognizer(faces);
         }
 
         /// <summary>
-        /// Initializes a new instance of the FacialRecognitionProcessor class
+        /// Initializes a new instance of the EigenObjectRecognitionProcessor class
         /// </summary>
-        public FacialRecognitionProcessor(IEnumerable<TargetFace> faces, double threshold)
+        public EigenObjectRecognitionProcessor(IEnumerable<EigenObjectTargetFace> faces, double threshold)
         {
-            this.Recognizer = new ManagedEigenObjectRecognizer(faces, threshold);
+            this.Recognizer = new EigenObjectRecognizer(faces, threshold);
         }
 
         /// <summary>
         /// Gets the facial recognition engine
         /// </summary>
-        protected ManagedEigenObjectRecognizer Recognizer { get; private set; }
+        protected EigenObjectRecognizer Recognizer { get; private set; }
 
         /// <summary>
         /// Attempt to find a trained face in the original bitmap
         /// </summary>
-        public void Process(RecognitionResult result, TrackingResults trackingResults)
+        public void Process(RecognitionResult result, KinectFaceTrackingResult trackingResults)
         {
             GraphicsPath origPath;
 
@@ -101,14 +101,20 @@ namespace Sacknet.KinectFacialRecognition
                         key = this.Recognizer.Recognize(grayBmp, out eigenDistance);
 
                     // Save detection info
-                    result.Faces = new List<RecognitionResult.Face>()
+                    result.Faces = new List<TrackedFace>()
                     {
-                        new RecognitionResult.Face()
+                        new TrackedFace()
                         {
                             TrackingResults = trackingResults,
-                            EigenDistance = eigenDistance,
-                            GrayFace = (Bitmap)grayBmp.Clone(),
-                            Key = key
+                            ProcessorResults = new List<IRecognitionProcessorResult>
+                            {
+                                new EigenObjectRecognitionProcessorResult
+                                {
+                                    EigenDistance = eigenDistance,
+                                    GrayFace = (Bitmap)grayBmp.Clone(),
+                                    Key = key
+                                }
+                            }
                         }
                     };
                 }

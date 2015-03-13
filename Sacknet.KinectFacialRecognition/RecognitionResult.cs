@@ -25,7 +25,7 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Gets or sets a list of faces detected in the image
         /// </summary>
-        public IEnumerable<Face> Faces { get; set; }
+        public IEnumerable<TrackedFace> Faces { get; set; }
 
         /// <summary>
         /// Disposes the object
@@ -47,36 +47,10 @@ namespace Sacknet.KinectFacialRecognition
             if (this.Faces != null)
             {
                 foreach (var face in this.Faces)
-                    face.GrayFace.Dispose();
+                    face.Dispose();
 
                 this.Faces = null;
             }
-        }
-
-        /// <summary>
-        /// A detected face - if recognized, key will not be null.
-        /// </summary>
-        public class Face
-        {
-            /// <summary>
-            /// Gets or sets the results from tracking
-            /// </summary>
-            public TrackingResults TrackingResults { get; set; }
-
-            /// <summary>
-            /// Gets or sets the grayscale, 100x100 image of the face to use for matching
-            /// </summary>
-            public Bitmap GrayFace { get; set; }
-
-            /// <summary>
-            /// Gets or sets the key of the recognized image (if any)
-            /// </summary>
-            public string Key { get; set; }
-
-            /// <summary>
-            /// Gets or sets the distance away from a perfectly recognized face
-            /// </summary>
-            public float EigenDistance { get; set; }
         }
     }
 }

@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Kinect;
 using Sacknet.KinectFacialRecognition;
+using Sacknet.KinectFacialRecognition.ManagedEigenObject;
 
 namespace Sacknet.KinectFacialRecognitionDemo
 {
@@ -19,7 +20,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
     {
         private bool takeTrainingImage = false;
         private KinectFacialRecognitionEngine engine;
-        private ObservableCollection<TargetFace> targetFaces = new ObservableCollection<TargetFace>();
+        private ObservableCollection<EigenObjectTargetFace> targetFaces = new ObservableCollection<EigenObjectTargetFace>();
 
         /// <summary>
         /// Initializes a new instance of the MainWindow class
@@ -67,20 +68,21 @@ namespace Sacknet.KinectFacialRecognitionDemo
         /// </summary>
         private void Engine_RecognitionComplete(object sender, RecognitionResult e)
         {
-            RecognitionResult.Face face = null;
+            TrackedFace face = null;
 
             if (e.Faces != null)
                 face = e.Faces.FirstOrDefault();
 
             if (face != null)
             {
-                if (!string.IsNullOrEmpty(face.Key))
+                var eoResult = (EigenObjectRecognitionProcessorResult)face.ProcessorResults.First();
+                if (!string.IsNullOrEmpty(eoResult.Key))
                 {
                     // Write the key on the image...
                     using (var g = Graphics.FromImage(e.ProcessedBitmap))
                     {
                         var rect = face.TrackingResults.FaceRect;
-                        g.DrawString(face.Key, new Font("Arial", 100), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
+                        g.DrawString(eoResult.Key, new Font("Arial", 100), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
                     }
                 }
 
@@ -88,7 +90,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
                 {
                     this.targetFaces.Add(new BitmapSourceTargetFace
                     {
-                        Image = (Bitmap)face.GrayFace.Clone(),
+                        Image = (Bitmap)eoResult.GrayFace.Clone(),
                         Key = this.NameField.Text
                     });
 
@@ -129,7 +131,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
         /// <summary>
         /// Target face with a BitmapSource accessor for the face
         /// </summary>
-        private class BitmapSourceTargetFace : TargetFace
+        private class BitmapSourceTargetFace : EigenObjectTargetFace
         {
             private BitmapSource bitmapSource;
 

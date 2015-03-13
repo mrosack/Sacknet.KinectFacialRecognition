@@ -1,0 +1,42 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
+{
+    /// <summary>
+    /// A recognition processor result for managed eigen object recognition
+    /// </summary>
+    public class EigenObjectRecognitionProcessorResult : IRecognitionProcessorResult
+    {
+        /// <summary>
+        /// Gets or sets the key of the detected face
+        /// </summary>
+        public string Key { get; set; }
+
+        /// <summary>
+        /// Gets or sets the grayscale, 100x100 image of the face to use for matching
+        /// </summary>
+        public Bitmap GrayFace { get; set; }
+
+        /// <summary>
+        /// Gets or sets the distance away from a perfectly recognized face
+        /// </summary>
+        public float EigenDistance { get; set; }
+
+        /// <summary>
+        /// Disposes the object
+        /// </summary>
+        public void Dispose()
+        {
+            if (this.GrayFace != null)
+            {
+                this.GrayFace.Dispose();
+                this.GrayFace = null;
+            }
+        }
+    }
+}

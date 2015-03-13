@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Sacknet.KinectFacialRecognition.ManagedEigenObject;
 
 namespace Sacknet.KinectFacialRecognition
 {
@@ -25,13 +26,13 @@ namespace Sacknet.KinectFacialRecognition
         /// Loads the given target faces into the eigen object recognizer
         /// </summary>
         /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
-        void SetTargetFaces(IEnumerable<TargetFace> faces);
+        void SetTargetFaces(IEnumerable<EigenObjectTargetFace> faces);
 
         /// <summary>
         /// Loads the given target faces into the eigen object recognizer
         /// </summary>
         /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
         /// <param name="threshold">Eigen distance threshold for a match.  1500-2000 is a reasonable value.  0 will never match.</param>
-        void SetTargetFaces(IEnumerable<TargetFace> faces, double threshold);
+        void SetTargetFaces(IEnumerable<EigenObjectTargetFace> faces, double threshold);
     }
 }

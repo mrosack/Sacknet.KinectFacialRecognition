@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sacknet.KinectFacialRecognition;
 using System.Diagnostics;
+using Sacknet.KinectFacialRecognition.ManagedEigenObject;
 
 namespace Sacknet.KinectFacialRecognitionTests
 {
@@ -16,34 +17,35 @@ namespace Sacknet.KinectFacialRecognitionTests
         [TestMethod]
         public void FacialRecognitionProcessorStillReturnsInfoIfNoTrainingImages()
         {
-            var processor = new FacialRecognitionProcessor();
+            var processor = new EigenObjectRecognitionProcessor();
 
             var recoResult = RunFacialRecognitionProcessor(processor);
 
             Assert.AreEqual(1, recoResult.Faces.Count());
 
             var face = recoResult.Faces.First();
+            var eoResult = (EigenObjectRecognitionProcessorResult)face.ProcessorResults.First();
 
-            Assert.AreEqual(-1, face.EigenDistance);
-            Assert.IsNull(face.Key);
-            Assert.IsNotNull(face.GrayFace);
+            Assert.AreEqual(-1, eoResult.EigenDistance);
+            Assert.IsNull(eoResult.Key);
+            Assert.IsNotNull(eoResult.GrayFace);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ManagedEigenObjectException))]
+        [ExpectedException(typeof(EigenObjectException))]
         public void FacialRecognitionProcessorThrowsExceptionIfOnlyOneTrainingImage()
         {
-            var faces = new List<TargetFace>();
+            var faces = new List<EigenObjectTargetFace>();
 
             var trainingImage = Directory.GetFiles(".", "train*.*").First();
-            
-            faces.Add(new TargetFace
+
+            faces.Add(new EigenObjectTargetFace
             {
                 Key = trainingImage,
                 Image = new Bitmap(trainingImage)
             });
 
-            var processor = new FacialRecognitionProcessor(faces);
+            var processor = new EigenObjectRecognitionProcessor(faces);
 
             RunFacialRecognitionProcessor(processor);
         }
@@ -51,30 +53,31 @@ namespace Sacknet.KinectFacialRecognitionTests
         [TestMethod]
         public void FacialRecognitionProcessorSucessfullyRecognizesMe()
         {
-            var faces = new List<TargetFace>();
+            var faces = new List<EigenObjectTargetFace>();
 
             foreach (var trainingImage in Directory.GetFiles(".", "train*.*"))
             {
-                faces.Add(new TargetFace
+                faces.Add(new EigenObjectTargetFace
                 {
                     Key = trainingImage,
                     Image = new Bitmap(trainingImage)
                 });
             }
 
-            var processor = new FacialRecognitionProcessor(faces);
+            var processor = new EigenObjectRecognitionProcessor(faces);
 
             var recoResult = RunFacialRecognitionProcessor(processor);
 
             Assert.AreEqual(1, recoResult.Faces.Count());
 
             var face = recoResult.Faces.First();
-            Assert.AreEqual(789.8254, Math.Round(face.EigenDistance, 4));
-            Assert.AreEqual(@".\train_mike_2.png", face.Key);
-            Assert.IsNotNull(face.GrayFace);
+            var eoResult = (EigenObjectRecognitionProcessorResult)face.ProcessorResults.First();
+            Assert.AreEqual(789.3967, Math.Round(eoResult.EigenDistance, 4));
+            Assert.AreEqual(@".\train_mike_2.png", eoResult.Key);
+            Assert.IsNotNull(eoResult.GrayFace);
         }
 
-        private RecognitionResult RunFacialRecognitionProcessor(FacialRecognitionProcessor processor)
+        private RecognitionResult RunFacialRecognitionProcessor(EigenObjectRecognitionProcessor processor)
         {
             var testFrame = new Bitmap("testframe.png");
             var recoResult = new RecognitionResult
@@ -83,7 +86,7 @@ namespace Sacknet.KinectFacialRecognitionTests
                 ProcessedBitmap = (Bitmap)testFrame.Clone()
             };
 
-            var trackingResults = Newtonsoft.Json.JsonConvert.DeserializeObject<TrackingResults>(File.ReadAllText("testframe.json"));
+            var trackingResults = Newtonsoft.Json.JsonConvert.DeserializeObject<KinectFaceTrackingResult>(File.ReadAllText("testframe.json"));
 
             var sw = new Stopwatch();
             sw.Start();
