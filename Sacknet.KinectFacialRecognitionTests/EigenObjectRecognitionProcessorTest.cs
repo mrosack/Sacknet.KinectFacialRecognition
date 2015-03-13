@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if FALSE
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -12,10 +13,10 @@ namespace Sacknet.KinectFacialRecognitionTests
 {
     [TestClass]
     [DeploymentItem("Images")]
-    public class FacialRecognitionProcessorTest
+    public class EigenObjectRecognitionProcessorTest
     {
         [TestMethod]
-        public void FacialRecognitionProcessorStillReturnsInfoIfNoTrainingImages()
+        public void EigenObjectRecognitionProcessorStillReturnsInfoIfNoTrainingImages()
         {
             var processor = new EigenObjectRecognitionProcessor();
 
@@ -33,7 +34,7 @@ namespace Sacknet.KinectFacialRecognitionTests
 
         [TestMethod]
         [ExpectedException(typeof(EigenObjectException))]
-        public void FacialRecognitionProcessorThrowsExceptionIfOnlyOneTrainingImage()
+        public void EigenObjectRecognitionProcessorThrowsExceptionIfOnlyOneTrainingImage()
         {
             var faces = new List<EigenObjectTargetFace>();
 
@@ -51,7 +52,7 @@ namespace Sacknet.KinectFacialRecognitionTests
         }
 
         [TestMethod]
-        public void FacialRecognitionProcessorSucessfullyRecognizesMe()
+        public void EigenObjectRecognitionProcessorSucessfullyRecognizesMe()
         {
             var faces = new List<EigenObjectTargetFace>();
 
@@ -99,3 +100,4 @@ namespace Sacknet.KinectFacialRecognitionTests
         }
     }
 }
+#endif

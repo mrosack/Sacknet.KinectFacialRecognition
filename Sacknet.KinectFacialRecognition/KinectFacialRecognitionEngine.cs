@@ -34,9 +34,15 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Initializes a new instance of the KinectFacialRecognitionEngine class
         /// </summary>
-        public KinectFacialRecognitionEngine(KinectSensor kinect)
+        public KinectFacialRecognitionEngine(KinectSensor kinect, params IRecognitionProcessor[] processors)
         {
             this.Kinect = kinect;
+
+            this.ProcessingEnabled = true;
+            this.Processors = processors;
+
+            if (this.Processors == null || !this.Processors.Any())
+                this.Processors = new List<IRecognitionProcessor> { new EigenObjectRecognitionProcessor() };
 
             this.bodies = new Body[kinect.BodyFrameSource.BodyCount];
             this.colorImageBuffer = new byte[4 * kinect.ColorFrameSource.FrameDescription.LengthInPixels];
@@ -49,10 +55,6 @@ namespace Sacknet.KinectFacialRecognition
             this.faceSource = new HighDefinitionFaceFrameSource(kinect);
             this.faceReader = this.faceSource.OpenReader();
             this.faceReader.FrameArrived += this.FaceFrameArrived;
-
-            this.ProcessingMutex = new object();
-            this.ProcessingEnabled = true;
-            this.Processor = new EigenObjectRecognitionProcessor();
 
             this.recognizerWorker = new BackgroundWorker();
             this.recognizerWorker.DoWork += this.RecognizerWorker_DoWork;
@@ -70,44 +72,14 @@ namespace Sacknet.KinectFacialRecognition
         public bool ProcessingEnabled { get; set; }
 
         /// <summary>
-        /// Gets a mutex that prevents the target faces from being updated during processing and vice-versa
+        /// Gets the active facial recognition processors
         /// </summary>
-        protected object ProcessingMutex { get; private set; }
-
-        /// <summary>
-        /// Gets the active facial recognition processor
-        /// </summary>
-        protected EigenObjectRecognitionProcessor Processor { get; private set; }
+        protected IEnumerable<IRecognitionProcessor> Processors { get; private set; }
 
         /// <summary>
         /// Gets the active Kinect sensor
         /// </summary>
         protected KinectSensor Kinect { get; private set; }
-
-        /// <summary>
-        /// Loads the given target faces into the eigen object recognizer
-        /// </summary>
-        /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
-        public virtual void SetTargetFaces(IEnumerable<EigenObjectTargetFace> faces)
-        {
-            this.SetTargetFaces(faces, 1750);
-        }
-
-        /// <summary>
-        /// Loads the given target faces into the eigen object recognizer
-        /// </summary>
-        /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
-        /// <param name="threshold">Eigen distance threshold for a match.  1500-2000 is a reasonable value.  0 will never match.</param>
-        public virtual void SetTargetFaces(IEnumerable<EigenObjectTargetFace> faces, double threshold)
-        {
-            lock (this.ProcessingMutex)
-            {
-                if (faces != null && faces.Any())
-                {
-                    this.Processor = new EigenObjectRecognitionProcessor(faces, threshold);
-                }
-            }
-        }
 
         /// <summary>
         /// Disposes the object
@@ -199,12 +171,66 @@ namespace Sacknet.KinectFacialRecognition
                 var vertices = this.faceModel.CalculateVerticesForAlignment(this.faceAlignment);
                 var trackingResults = new KinectFaceTrackingResult(vertices, this.Kinect.CoordinateMapper);
 
-                lock (this.ProcessingMutex)
+                if (this.Processors.Any() && this.ProcessingEnabled)
                 {
-                    if (this.Processor != null && this.ProcessingEnabled)
+                    GraphicsPath origPath;
+
+                    using (var g = Graphics.FromImage(result.ProcessedBitmap))
                     {
-                        this.Processor.Process(result, trackingResults);
+                        // Create a path tracing the face and draw on the processed image
+                        origPath = new GraphicsPath();
+
+                        foreach (var point in trackingResults.FacePoints)
+                        {
+                            origPath.AddLine(point, point);
+                        }
+
+                        origPath.CloseFigure();
+                        g.DrawPath(new Pen(Color.Red, 2), origPath);
                     }
+
+                    var minX = (int)origPath.PathPoints.Min(x => x.X);
+                    var maxX = (int)origPath.PathPoints.Max(x => x.X);
+                    var minY = (int)origPath.PathPoints.Min(x => x.Y);
+                    var maxY = (int)origPath.PathPoints.Max(x => x.Y);
+                    var width = maxX - minX;
+                    var height = maxY - minY;
+
+                    // Create a cropped path tracing the face...
+                    var croppedPath = new GraphicsPath();
+
+                    foreach (var point in trackingResults.FacePoints)
+                    {
+                        var croppedPoint = new System.Drawing.Point(point.X - minX, point.Y - minY);
+                        croppedPath.AddLine(croppedPoint, croppedPoint);
+                    }
+
+                    croppedPath.CloseFigure();
+                    
+                    // ...and create a cropped image to use for facial recognition
+                    using (var croppedBmp = new Bitmap(width, height))
+                    {
+                        using (var croppedG = Graphics.FromImage(croppedBmp))
+                        {
+                            croppedG.FillRectangle(Brushes.Gray, 0, 0, width, height);
+                            croppedG.SetClip(croppedPath);
+                            croppedG.DrawImage(result.OriginalBitmap, minX * -1, minY * -1);
+                        }
+                    }
+
+                    var rpResults = new List<IRecognitionProcessorResult>();
+
+                    foreach (var processor in this.Processors)
+                        rpResults.Add(processor.Process(result.OriginalBitmap, trackingResults));
+
+                    result.Faces = new List<TrackedFace>
+                    {
+                        new TrackedFace
+                        {
+                            ProcessorResults = rpResults,
+                            TrackingResults = trackingResults
+                        }
+                    };
                 }
             }
         }

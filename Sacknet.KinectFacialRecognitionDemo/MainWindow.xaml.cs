@@ -21,6 +21,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
         private bool takeTrainingImage = false;
         private KinectFacialRecognitionEngine engine;
         private ObservableCollection<EigenObjectTargetFace> targetFaces = new ObservableCollection<EigenObjectTargetFace>();
+        private EigenObjectRecognitionProcessor eorProcessor = new EigenObjectRecognitionProcessor();
 
         /// <summary>
         /// Initializes a new instance of the MainWindow class
@@ -30,7 +31,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
             KinectSensor kinectSensor = KinectSensor.GetDefault();
             kinectSensor.Open();
 
-            this.engine = new KinectFacialRecognitionEngine(kinectSensor);
+            this.engine = new KinectFacialRecognitionEngine(kinectSensor, this.eorProcessor);
             this.engine.RecognitionComplete += this.Engine_RecognitionComplete;
 
             this.InitializeComponent();
@@ -98,7 +99,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
                     this.NameField.Text = this.NameField.Text.Replace(this.targetFaces.Count.ToString(), (this.targetFaces.Count + 1).ToString());
 
                     if (this.targetFaces.Count > 1)
-                        this.engine.SetTargetFaces(this.targetFaces);
+                        this.eorProcessor.SetTargetFaces(this.targetFaces);
                 }
             }
 

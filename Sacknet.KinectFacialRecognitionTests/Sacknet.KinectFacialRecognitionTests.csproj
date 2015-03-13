@@ -77,7 +77,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="FacialRecognitionProcessorTest.cs" />
+    <Compile Include="EigenObjectRecognitionProcessorTest.cs" />
     <Compile Include="EigenObjectRecognizerTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
