@@ -169,7 +169,7 @@ namespace Sacknet.KinectFacialRecognition
             if (this.faceModel != null)
             {
                 var vertices = this.faceModel.CalculateVerticesForAlignment(this.faceAlignment);
-                var trackingResults = new KinectFaceTrackingResult(vertices, this.Kinect.CoordinateMapper);
+                var trackingResults = new KinectFaceTrackingResult(this.faceModel, vertices, this.Kinect.CoordinateMapper);
 
                 if (this.Processors.Any() && this.ProcessingEnabled)
                 {

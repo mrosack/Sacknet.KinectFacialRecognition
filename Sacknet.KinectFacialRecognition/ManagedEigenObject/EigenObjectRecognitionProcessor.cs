@@ -25,7 +25,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Initializes a new instance of the EigenObjectRecognitionProcessor class
         /// </summary>
-        public EigenObjectRecognitionProcessor(IEnumerable<EigenObjectTargetFace> faces)
+        public EigenObjectRecognitionProcessor(IEnumerable<IEigenObjectTargetFace> faces)
         {
             this.SetTargetFaces(faces);
         }
@@ -33,7 +33,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Initializes a new instance of the EigenObjectRecognitionProcessor class
         /// </summary>
-        public EigenObjectRecognitionProcessor(IEnumerable<EigenObjectTargetFace> faces, double threshold)
+        public EigenObjectRecognitionProcessor(IEnumerable<IEigenObjectTargetFace> faces, double threshold)
         {
             this.SetTargetFaces(faces, threshold);
         }
@@ -47,7 +47,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// Loads the given target faces into the eigen object recognizer
         /// </summary>
         /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
-        public virtual void SetTargetFaces(IEnumerable<EigenObjectTargetFace> faces)
+        public virtual void SetTargetFaces(IEnumerable<IEigenObjectTargetFace> faces)
         {
             this.SetTargetFaces(faces, 1750);
         }
@@ -57,7 +57,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// </summary>
         /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
         /// <param name="threshold">Eigen distance threshold for a match.  1500-2000 is a reasonable value.  0 will never match.</param>
-        public virtual void SetTargetFaces(IEnumerable<EigenObjectTargetFace> faces, double threshold)
+        public virtual void SetTargetFaces(IEnumerable<IEigenObjectTargetFace> faces, double threshold)
         {
             lock (this.processingMutex)
             {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using Sacknet.KinectFacialRecognition;
 using Sacknet.KinectFacialRecognition.ManagedEigenObject;
 
@@ -15,15 +16,14 @@ namespace Sacknet.KinectFacialRecognitionTests
         [TestMethod]
         public void ManagedRecognizerSucessfullyRecognizesMe()
         {
-            var faces = new List<EigenObjectTargetFace>();
+            var faces = new List<IEigenObjectTargetFace>();
 
             foreach (var trainingImage in Directory.GetFiles(".", "train*.*"))
             {
-                faces.Add(new EigenObjectTargetFace
-                {
-                    Key = trainingImage,
-                    Image = new Bitmap(trainingImage)
-                });
+                var mockFace = new Mock<IEigenObjectTargetFace>().Object;
+                mockFace.Key = trainingImage;
+                mockFace.Image = new Bitmap(trainingImage);
+                faces.Add(mockFace);
             }
 
             var recognizer = new EigenObjectRecognizer(faces);

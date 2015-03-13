@@ -15,7 +15,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Initializes a new instance of the <see cref="EigenObjectRecognizer"/> class.
         /// </summary>
-        public EigenObjectRecognizer(IEnumerable<EigenObjectTargetFace> targetFaces)
+        public EigenObjectRecognizer(IEnumerable<IEigenObjectTargetFace> targetFaces)
             : this(targetFaces, 2000)
         {
         }
@@ -23,7 +23,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Initializes a new instance of the <see cref="EigenObjectRecognizer"/> class.
         /// </summary>
-        public EigenObjectRecognizer(IEnumerable<EigenObjectTargetFace> targetFaces, double eigenDistanceThreshold)
+        public EigenObjectRecognizer(IEnumerable<IEigenObjectTargetFace> targetFaces, double eigenDistanceThreshold)
             : this(targetFaces, eigenDistanceThreshold, targetFaces.Count(), 0.001)
         {
         }
@@ -31,7 +31,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Initializes a new instance of the <see cref="EigenObjectRecognizer"/> class.
         /// </summary>
-        public EigenObjectRecognizer(IEnumerable<EigenObjectTargetFace> targetFaces, double eigenDistanceThreshold, int maxIter, double eps)
+        public EigenObjectRecognizer(IEnumerable<IEigenObjectTargetFace> targetFaces, double eigenDistanceThreshold, int maxIter, double eps)
         {
             Debug.Assert(eigenDistanceThreshold >= 0.0, "Eigen-distance threshold should always >= 0.0");
 

@@ -82,7 +82,7 @@
     <Compile Include="RecognitionResult.cs" />
     <Compile Include="KinectFacialRecognitionEngine.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ManagedEigenObject\EigenObjectTargetFace.cs" />
+    <Compile Include="ManagedEigenObject\IEigenObjectTargetFace.cs" />
     <Compile Include="TrackedFace.cs" />
     <Compile Include="KinectFaceTrackingResult.cs" />
   </ItemGroup>

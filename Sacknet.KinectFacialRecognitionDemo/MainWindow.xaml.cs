@@ -20,7 +20,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
     {
         private bool takeTrainingImage = false;
         private KinectFacialRecognitionEngine engine;
-        private ObservableCollection<EigenObjectTargetFace> targetFaces = new ObservableCollection<EigenObjectTargetFace>();
+        private ObservableCollection<IEigenObjectTargetFace> targetFaces = new ObservableCollection<IEigenObjectTargetFace>();
         private EigenObjectRecognitionProcessor eorProcessor = new EigenObjectRecognitionProcessor();
 
         /// <summary>
@@ -77,6 +77,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
             if (face != null)
             {
                 var eoResult = (EigenObjectRecognitionProcessorResult)face.ProcessorResults.First();
+
                 if (!string.IsNullOrEmpty(eoResult.Key))
                 {
                     // Write the key on the image...
@@ -132,7 +133,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
         /// <summary>
         /// Target face with a BitmapSource accessor for the face
         /// </summary>
-        private class BitmapSourceTargetFace : EigenObjectTargetFace
+        private class BitmapSourceTargetFace : IEigenObjectTargetFace
         {
             private BitmapSource bitmapSource;
 
@@ -149,6 +150,16 @@ namespace Sacknet.KinectFacialRecognitionDemo
                     return this.bitmapSource;
                 }
             }
+
+            /// <summary>
+            /// Gets or sets the key returned when this face is found
+            /// </summary>
+            public string Key { get; set; }
+
+            /// <summary>
+            /// Gets or sets the grayscale, 100x100 target image
+            /// </summary>
+            public Bitmap Image { get; set; }
         }
     }
 }

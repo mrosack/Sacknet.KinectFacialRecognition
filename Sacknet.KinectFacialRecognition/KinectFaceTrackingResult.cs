@@ -31,8 +31,9 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Initializes a new instance of the KinectFaceTrackingResult class from a set of Kinect face points
         /// </summary>
-        public KinectFaceTrackingResult(IReadOnlyList<CameraSpacePoint> vertices, CoordinateMapper mapper)
+        public KinectFaceTrackingResult(FaceModel faceModel, IReadOnlyList<CameraSpacePoint> vertices, CoordinateMapper mapper)
         {
+            this.FaceModel = faceModel;
             this.FacePoints = this.FaceBoundaryPoints(vertices, mapper);
 
             // Calculate facerect manually from facepoints
@@ -45,14 +46,19 @@ namespace Sacknet.KinectFacialRecognition
         }
 
         /// <summary>
-        /// Gets or sets the outline of the face
+        /// Gets the face model
         /// </summary>
-        public List<System.Drawing.Point> FacePoints { get; set; }
+        public FaceModel FaceModel { get; private set; }
 
         /// <summary>
-        /// Gets or sets the face bounding box
+        /// Gets the outline of the face
         /// </summary>
-        public System.Drawing.Rectangle FaceRect { get; set; }
+        public List<System.Drawing.Point> FacePoints { get; private set; }
+
+        /// <summary>
+        /// Gets the face bounding box
+        /// </summary>
+        public System.Drawing.Rectangle FaceRect { get; private set; }
 
         /// <summary>
         /// Since the HighDetailFacePoints aren't well documented, this is some code I used to figure out which ones to use to get the face outline
