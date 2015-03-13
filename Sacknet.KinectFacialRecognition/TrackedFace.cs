@@ -22,6 +22,23 @@ namespace Sacknet.KinectFacialRecognition
         public IEnumerable<IRecognitionProcessorResult> ProcessorResults { get; set; }
 
         /// <summary>
+        /// Gets the key of the face if processing was successful and consistent between processors
+        /// </summary>
+        public string Key
+        {
+            get
+            {
+                var keyResults = this.ProcessorResults.Where(x => !string.IsNullOrEmpty(x.Key)).Select(x => x.Key).Distinct().ToList();
+
+                if (keyResults.Count == 1)
+                    return keyResults.First();
+
+                // If we have conflicting results, or no matches, return null
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Disposes the object
         /// </summary>
         public void Dispose()

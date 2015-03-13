@@ -13,7 +13,7 @@ namespace Sacknet.KinectFacialRecognition
     public interface IRecognitionProcessor
     {
         /// <summary>
-        /// Attempt to find a trained face in the original bitmap
+        /// Attempt to find a trained face
         /// </summary>
         IRecognitionProcessorResult Process(Bitmap croppedBmp, KinectFaceTrackingResult trackingResults);
     }

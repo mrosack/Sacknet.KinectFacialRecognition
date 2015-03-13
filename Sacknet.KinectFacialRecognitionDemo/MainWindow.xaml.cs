@@ -8,7 +8,9 @@ using System.Windows;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Kinect;
+using Microsoft.Kinect.Face;
 using Sacknet.KinectFacialRecognition;
+using Sacknet.KinectFacialRecognition.KinectFaceModel;
 using Sacknet.KinectFacialRecognition.ManagedEigenObject;
 
 namespace Sacknet.KinectFacialRecognitionDemo
@@ -20,8 +22,9 @@ namespace Sacknet.KinectFacialRecognitionDemo
     {
         private bool takeTrainingImage = false;
         private KinectFacialRecognitionEngine engine;
-        private ObservableCollection<IEigenObjectTargetFace> targetFaces = new ObservableCollection<IEigenObjectTargetFace>();
+        private ObservableCollection<BitmapSourceTargetFace> targetFaces = new ObservableCollection<BitmapSourceTargetFace>();
         private EigenObjectRecognitionProcessor eorProcessor = new EigenObjectRecognitionProcessor();
+        private FaceModelRecognitionProcessor fmrProcessor = new FaceModelRecognitionProcessor();
 
         /// <summary>
         /// Initializes a new instance of the MainWindow class
@@ -31,7 +34,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
             KinectSensor kinectSensor = KinectSensor.GetDefault();
             kinectSensor.Open();
 
-            this.engine = new KinectFacialRecognitionEngine(kinectSensor, this.eorProcessor);
+            this.engine = new KinectFacialRecognitionEngine(kinectSensor, this.eorProcessor, this.fmrProcessor);
             this.engine.RecognitionComplete += this.Engine_RecognitionComplete;
 
             this.InitializeComponent();
@@ -76,31 +79,38 @@ namespace Sacknet.KinectFacialRecognitionDemo
 
             if (face != null)
             {
-                var eoResult = (EigenObjectRecognitionProcessorResult)face.ProcessorResults.First();
-
-                if (!string.IsNullOrEmpty(eoResult.Key))
+                if (!string.IsNullOrEmpty(face.Key))
                 {
                     // Write the key on the image...
                     using (var g = Graphics.FromImage(e.ProcessedBitmap))
                     {
                         var rect = face.TrackingResults.FaceRect;
-                        g.DrawString(eoResult.Key, new Font("Arial", 100), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
+                        g.DrawString(face.Key, new Font("Arial", 100), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
                     }
                 }
 
                 if (this.takeTrainingImage)
                 {
+                    var eoResult = (EigenObjectRecognitionProcessorResult)face.ProcessorResults.Single(x => x is EigenObjectRecognitionProcessorResult);
+                    var fmResult = (FaceModelRecognitionProcessorResult)face.ProcessorResults.Single(x => x is FaceModelRecognitionProcessorResult);
+
                     this.targetFaces.Add(new BitmapSourceTargetFace
                     {
-                        Image = (Bitmap)eoResult.GrayFace.Clone(),
-                        Key = this.NameField.Text
+                        Image = (Bitmap)eoResult.Image.Clone(),
+                        Key = this.NameField.Text,
+                        Deformations = fmResult.Deformations,
+                        HairColor = fmResult.HairColor,
+                        SkinColor = fmResult.SkinColor
                     });
 
                     this.takeTrainingImage = false;
                     this.NameField.Text = this.NameField.Text.Replace(this.targetFaces.Count.ToString(), (this.targetFaces.Count + 1).ToString());
 
                     if (this.targetFaces.Count > 1)
+                    {
                         this.eorProcessor.SetTargetFaces(this.targetFaces);
+                        this.fmrProcessor.SetTargetFaces(this.targetFaces);
+                    }
                 }
             }
 
@@ -133,7 +143,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
         /// <summary>
         /// Target face with a BitmapSource accessor for the face
         /// </summary>
-        private class BitmapSourceTargetFace : IEigenObjectTargetFace
+        private class BitmapSourceTargetFace : IEigenObjectTargetFace, IFaceModelTargetFace
         {
             private BitmapSource bitmapSource;
 
@@ -160,6 +170,21 @@ namespace Sacknet.KinectFacialRecognitionDemo
             /// Gets or sets the grayscale, 100x100 target image
             /// </summary>
             public Bitmap Image { get; set; }
+
+            /// <summary>
+            /// Gets or sets the detected hair color of the face
+            /// </summary>
+            public uint HairColor { get; set; }
+
+            /// <summary>
+            /// Gets or sets the detected skin color of the face
+            /// </summary>
+            public uint SkinColor { get; set; }
+
+            /// <summary>
+            /// Gets or sets the detected deformations of the face
+            /// </summary>
+            public IReadOnlyDictionary<FaceShapeDeformations, float> Deformations { get; set; }
         }
     }
 }

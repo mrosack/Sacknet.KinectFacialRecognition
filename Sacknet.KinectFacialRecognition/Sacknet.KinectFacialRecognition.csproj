@@ -69,7 +69,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="KinectFaceModel\FaceModelRecognitionProcessor.cs" />
+    <Compile Include="KinectFaceModel\FaceModelRecognitionProcessorResult.cs" />
     <Compile Include="IRecognitionProcessor.cs" />
+    <Compile Include="KinectFaceModel\IFaceModelTargetFace.cs" />
     <Compile Include="ManagedEigenObject\EigenObjectRecognitionProcessor.cs" />
     <Compile Include="FloatImage.cs" />
     <Compile Include="BitmapExtensions.cs" />
@@ -89,6 +92,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

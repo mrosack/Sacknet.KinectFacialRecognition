@@ -42,7 +42,7 @@ namespace Sacknet.KinectFacialRecognition
             this.Processors = processors;
 
             if (this.Processors == null || !this.Processors.Any())
-                this.Processors = new List<IRecognitionProcessor> { new EigenObjectRecognitionProcessor() };
+                throw new ArgumentException("Please pass in at least one recognition processor!");
 
             this.bodies = new Body[kinect.BodyFrameSource.BodyCount];
             this.colorImageBuffer = new byte[4 * kinect.ColorFrameSource.FrameDescription.LengthInPixels];

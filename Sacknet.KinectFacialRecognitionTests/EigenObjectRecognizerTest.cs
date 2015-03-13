@@ -20,9 +20,10 @@ namespace Sacknet.KinectFacialRecognitionTests
 
             foreach (var trainingImage in Directory.GetFiles(".", "train*.*"))
             {
-                var mockFace = new Mock<IEigenObjectTargetFace>().Object;
-                mockFace.Key = trainingImage;
-                mockFace.Image = new Bitmap(trainingImage);
+                var mockFace = new Mock<IEigenObjectTargetFace>()
+                    .SetupProperty(x => x.Image, new Bitmap(trainingImage))
+                    .SetupProperty(x => x.Key, trainingImage)
+                    .Object;
                 faces.Add(mockFace);
             }
 
