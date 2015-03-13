@@ -42,7 +42,7 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         /// </summary>
         public void Dispose()
         {
-            throw new NotImplementedException();
+            // Nothing unmanaged here...
         }
     }
 }

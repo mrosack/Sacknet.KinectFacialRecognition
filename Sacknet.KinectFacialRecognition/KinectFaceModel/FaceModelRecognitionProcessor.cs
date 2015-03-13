@@ -14,7 +14,7 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
     public class FaceModelRecognitionProcessor : IRecognitionProcessor
     {
         private object processingMutex = new object();
-        private IEnumerable<IFaceModelTargetFace> faces;
+        private IEnumerable<IFaceModelTargetFace> faces = new List<IFaceModelTargetFace>();
         
         /// <summary>
         /// Initializes a new instance of the FaceModelRecognitionProcessor class
@@ -78,14 +78,17 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         {
             float score = 0;
 
-            if (subject.HairColor == target.HairColor)
-                score += 5;
+            if (subject.HairColor != target.HairColor)
+                score -= 5;
 
-            if (subject.SkinColor == target.SkinColor)
-                score += 5;
+            if (subject.SkinColor != target.SkinColor)
+                score -= 15;
 
             foreach (FaceShapeDeformations deformation in Enum.GetValues(typeof(FaceShapeDeformations)))
             {
+                if (!subject.Deformations.ContainsKey(deformation) || target.Deformations.ContainsKey(deformation))
+                    continue;
+
                 var deformationDifference = Math.Abs(subject.Deformations[deformation] - target.Deformations[deformation]);
                 if (deformationDifference > 1)
                     deformationDifference = 1;

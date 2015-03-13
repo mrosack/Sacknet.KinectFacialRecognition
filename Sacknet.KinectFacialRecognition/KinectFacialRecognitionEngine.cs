@@ -216,21 +216,21 @@ namespace Sacknet.KinectFacialRecognition
                             croppedG.SetClip(croppedPath);
                             croppedG.DrawImage(result.OriginalBitmap, minX * -1, minY * -1);
                         }
-                    }
 
-                    var rpResults = new List<IRecognitionProcessorResult>();
+                        var rpResults = new List<IRecognitionProcessorResult>();
 
-                    foreach (var processor in this.Processors)
-                        rpResults.Add(processor.Process(result.OriginalBitmap, trackingResults));
+                        foreach (var processor in this.Processors)
+                            rpResults.Add(processor.Process(croppedBmp, trackingResults));
 
-                    result.Faces = new List<TrackedFace>
-                    {
-                        new TrackedFace
+                        result.Faces = new List<TrackedFace>
                         {
-                            ProcessorResults = rpResults,
-                            TrackingResults = trackingResults
-                        }
-                    };
+                            new TrackedFace
+                            {
+                                ProcessorResults = rpResults,
+                                TrackingResults = trackingResults
+                            }
+                        };
+                    }
                 }
             }
         }
