@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,14 +19,24 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         public string Key { get; set; }
 
         /// <summary>
-        /// Gets or sets the normalized 3D face points
+        /// Gets or sets the detected hair color of the face
         /// </summary>
-        public List<Point3D> Normalized3DFacePoints { get; set; }
+        public Color HairColor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the detected skin color of the face
+        /// </summary>
+        public Color SkinColor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the detected face deformations
+        /// </summary>
+        public IReadOnlyDictionary<FaceShapeDeformations, float> Deformations { get; set; }
 
         /// <summary>
         /// Gets or sets the score of the match (if Key is set)
         /// </summary>
-        public float Score { get; set; }
+        public double Score { get; set; }
 
         /// <summary>
         /// Disposes the object

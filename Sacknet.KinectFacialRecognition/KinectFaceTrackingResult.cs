@@ -31,9 +31,10 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Initializes a new instance of the KinectFaceTrackingResult class from a set of Kinect face points
         /// </summary>
-        public KinectFaceTrackingResult(FaceModel faceModel, FaceAlignment faceAlignment, CoordinateMapper mapper)
+        public KinectFaceTrackingResult(FaceModel faceModel, FaceModel constructedFaceModel, FaceAlignment faceAlignment, CoordinateMapper mapper)
         {
             this.FaceModel = faceModel;
+            this.ConstructedFaceModel = constructedFaceModel;
             this.FaceAlignment = faceAlignment;
 
             var vertices = faceModel.CalculateVerticesForAlignment(faceAlignment);
@@ -53,6 +54,11 @@ namespace Sacknet.KinectFacialRecognition
         /// Gets the face model
         /// </summary>
         public FaceModel FaceModel { get; private set; }
+
+        /// <summary>
+        /// Gets a face model constructed from the HD face builder
+        /// </summary>
+        public FaceModel ConstructedFaceModel { get; private set; }
 
         /// <summary>
         /// Gets the face alignment
@@ -81,7 +87,6 @@ namespace Sacknet.KinectFacialRecognition
         {
             float pitch, yaw, roll;
             ExtractFaceRotationInDegrees(alignment.FaceOrientation, out pitch, out yaw, out roll);
-            Console.WriteLine("X: {0}, Y: {1}, Z: {2}", pitch, yaw, roll);
 
             var result = new List<Point3D>();
             float maxValue = 0;

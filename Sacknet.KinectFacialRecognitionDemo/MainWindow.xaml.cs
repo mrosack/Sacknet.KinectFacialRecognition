@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Kinect;
 using Microsoft.Kinect.Face;
+using Newtonsoft.Json;
 using Sacknet.KinectFacialRecognition;
 using Sacknet.KinectFacialRecognition.KinectFaceModel;
 using Sacknet.KinectFacialRecognition.ManagedEigenObject;
@@ -98,8 +99,12 @@ namespace Sacknet.KinectFacialRecognitionDemo
                     {
                         Image = (Bitmap)eoResult.Image.Clone(),
                         Key = this.NameField.Text,
-                        Normalized3DFacePoints = fmResult.Normalized3DFacePoints
+                        Deformations = fmResult.Deformations,
+                        HairColor = fmResult.HairColor,
+                        SkinColor = fmResult.SkinColor
                     });
+
+                    System.IO.File.WriteAllText(DateTime.Now.Ticks.ToString() + ".txt", JsonConvert.SerializeObject(fmResult));
 
                     this.takeTrainingImage = false;
                     this.NameField.Text = this.NameField.Text.Replace(this.targetFaces.Count.ToString(), (this.targetFaces.Count + 1).ToString());
@@ -170,9 +175,19 @@ namespace Sacknet.KinectFacialRecognitionDemo
             public Bitmap Image { get; set; }
 
             /// <summary>
-            /// Gets or sets the normalized 3D face points
+            /// Gets or sets the detected hair color of the face
             /// </summary>
-            public List<Point3D> Normalized3DFacePoints { get; set; }
+            public Color HairColor { get; set; }
+
+            /// <summary>
+            /// Gets or sets the detected skin color of the face
+            /// </summary>
+            public Color SkinColor { get; set; }
+
+            /// <summary>
+            /// Gets or sets the detected deformations of the face
+            /// </summary>
+            public IReadOnlyDictionary<FaceShapeDeformations, float> Deformations { get; set; }
         }
     }
 }

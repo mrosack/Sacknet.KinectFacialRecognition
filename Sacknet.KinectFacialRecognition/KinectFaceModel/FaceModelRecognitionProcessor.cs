@@ -21,15 +21,22 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         /// </summary>
         public FaceModelRecognitionProcessor()
         {
+            this.Threshold = 15;
         }
 
         /// <summary>
         /// Initializes a new instance of the FaceModelRecognitionProcessor class
         /// </summary>
         public FaceModelRecognitionProcessor(IEnumerable<IFaceModelTargetFace> faces)
+            : this()
         {
             this.SetTargetFaces(faces);
         }
+
+        /// <summary>
+        /// Gets or sets the score threshold that denotes a match
+        /// </summary>
+        public double Threshold { get; set; }
 
         /// <summary>
         /// Loads the given target faces
@@ -49,20 +56,15 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         {
             lock (this.processingMutex)
             {
-                var result = new FaceModelRecognitionProcessorResult
-                {
-                    Normalized3DFacePoints = trackingResults.Normalized3DFacePoints
-                };
+                var result = new FaceModelRecognitionProcessorResult();
 
-                foreach (var targetFace in this.faces)
+                if (trackingResults.ConstructedFaceModel != null)
                 {
-                    var score = this.ScoreFaceDifferences(result, targetFace);
+                    result.Deformations = trackingResults.ConstructedFaceModel.FaceShapeDeformations;
+                    result.HairColor = this.UIntToColor(trackingResults.ConstructedFaceModel.HairColor);
+                    result.SkinColor = this.UIntToColor(trackingResults.ConstructedFaceModel.SkinColor);
 
-                    if (score > 20 && score > result.Score)
-                    {
-                        result.Score = score;
-                        result.Key = targetFace.Key;
-                    }   
+                    this.Process(result);
                 }
 
                 return result;
@@ -70,27 +72,67 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         }
 
         /// <summary>
+        /// Processes the subject data (contained in result) against the target faces
+        /// </summary>
+        public void Process(FaceModelRecognitionProcessorResult result)
+        {
+            lock (this.processingMutex)
+            {
+                result.Score = double.MaxValue;
+
+                foreach (var targetFace in this.faces)
+                {
+                    var score = this.ScoreFaceDifferences(result, targetFace);
+
+                    if (score < this.Threshold && score < result.Score)
+                    {
+                        result.Score = score;
+                        result.Key = targetFace.Key;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Calculates a score for how similar the subject is to the target
         /// </summary>
-        public float ScoreFaceDifferences(IFaceModelTargetFace subject, IFaceModelTargetFace target)
+        public double ScoreFaceDifferences(IFaceModelTargetFace subject, IFaceModelTargetFace target)
         {
-            if (subject.Normalized3DFacePoints.Count != target.Normalized3DFacePoints.Count)
-                return 0;
+            double score = 0;
+            var shc = subject.HairColor;
+            var ssc = subject.SkinColor;
+            var thc = target.HairColor;
+            var tsc = target.SkinColor;
 
-            float score = 0;
+            var hairColorDistance = Math.Sqrt(Math.Pow(shc.R - thc.R, 2) + Math.Pow(shc.G - thc.G, 2) + Math.Pow(shc.B - thc.B, 2));
+            var skinColorDistance = Math.Sqrt(Math.Pow(ssc.R - tsc.R, 2) + Math.Pow(ssc.G - tsc.G, 2) + Math.Pow(ssc.B - tsc.B, 2));
 
-            for (int i = 0; i < subject.Normalized3DFacePoints.Count; i++)
+            // add up to 5 points for hair/skin color differences
+            score += Math.Min(5, hairColorDistance / 10);
+            score += Math.Min(5, skinColorDistance / 10);
+
+            foreach (FaceShapeDeformations deformation in Enum.GetValues(typeof(FaceShapeDeformations)))
             {
-                var s = subject.Normalized3DFacePoints[i];
-                var t = target.Normalized3DFacePoints[i];
-                var distance = (float)Math.Sqrt(Math.Pow(s.X - t.X, 2) + Math.Pow(s.Y - t.Y, 2) + Math.Pow(s.Z - t.Z, 2));
+                if (!subject.Deformations.ContainsKey(deformation) || !target.Deformations.ContainsKey(deformation))
+                    continue;
 
-                // good distance is < 0.003
-                if (distance < 0.003)
-                    score += 1;
+                var deformationDifference = Math.Abs(subject.Deformations[deformation] - target.Deformations[deformation]);
+                score += deformationDifference;
             }
 
             return score;
+        }
+
+        /// <summary>
+        /// Converts an unsigned int into a color
+        /// </summary>
+        private Color UIntToColor(uint color)
+        {
+            byte a = (byte)(color >> 24);
+            byte r = (byte)(color >> 16);
+            byte g = (byte)(color >> 8);
+            byte b = (byte)(color >> 0);
+            return Color.FromArgb(a, r, g, b);
         }
     }
 }
