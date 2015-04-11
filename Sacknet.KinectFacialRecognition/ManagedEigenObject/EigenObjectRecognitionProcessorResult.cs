@@ -25,7 +25,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Gets or sets the distance away from a perfectly recognized face
         /// </summary>
-        public float EigenDistance { get; set; }
+        public double Score { get; set; }
 
         /// <summary>
         /// Disposes the object

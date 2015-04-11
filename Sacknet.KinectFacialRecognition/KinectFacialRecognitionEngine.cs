@@ -95,16 +95,16 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         public void Dispose()
         {
-            lock (this.processFaceModelMutex)
-            {
-                this.DisposeFaceModelBuilder();
-            }
-
             this.msReader.MultiSourceFrameArrived -= this.MultiSourceFrameArrived;
             this.msReader.Dispose();
 
             this.faceReader.FrameArrived -= this.FaceFrameArrived;
             this.faceReader.Dispose();
+
+            lock (this.processFaceModelMutex)
+            {
+                this.DisposeFaceModelBuilder();
+            }
         }
 
         /// <summary>
@@ -154,7 +154,7 @@ namespace Sacknet.KinectFacialRecognition
 
             lock (this)
             {
-                this.faceReady = this.faceModel != null;
+                this.faceReady = true;
                 this.StartWorkerIfReady();
             }
         }
@@ -259,19 +259,20 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         private void RecognizerWorker_DoWork(object sender, DoWorkEventArgs e)
         {
+            this.faceReady = this.multiSourceReady = false;
             var status = FaceModelBuilderCollectionStatus.Complete;
 
             if (!this.constructionInProcess && this.fmb != null)
                 status = this.fmb.CollectionStatus;
 
-            var faceTrackingResult = new KinectFaceTrackingResult(this.faceModel, this.constructedFaceModel, status, this.faceAlignment, this.Kinect.CoordinateMapper);
-
             var result = new RecognitionResult();
             result.ColorSpaceBitmap = this.ImageToBitmap(this.colorImageBuffer, this.imageWidth, this.imageHeight);
             e.Result = result;
 
-            if (this.Processors.Any() && this.ProcessingEnabled)
+            if (this.faceModel != null && this.Processors.Any() && this.ProcessingEnabled)
             {
+                var faceTrackingResult = new KinectFaceTrackingResult(this.faceModel, this.constructedFaceModel, status, this.faceAlignment, this.Kinect.CoordinateMapper);
+
                 var rpResults = new List<IRecognitionProcessorResult>();
 
                 foreach (var processor in this.Processors)
@@ -286,9 +287,6 @@ namespace Sacknet.KinectFacialRecognition
                     }
                 };
             }
-
-            this.faceReady = false;
-            this.multiSourceReady = false;
         }
 
         /// <summary>

@@ -90,7 +90,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
                         // Save detection info
                         return new EigenObjectRecognitionProcessorResult
                         {
-                            EigenDistance = eigenDistance,
+                            Score = eigenDistance,
                             Image = (Bitmap)grayBmp.Clone(),
                             Key = key
                         };

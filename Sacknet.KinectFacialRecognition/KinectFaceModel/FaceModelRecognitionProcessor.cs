@@ -21,7 +21,7 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         /// </summary>
         public FaceModelRecognitionProcessor()
         {
-            this.Threshold = 15;
+            this.Threshold = 25;
         }
 
         /// <summary>

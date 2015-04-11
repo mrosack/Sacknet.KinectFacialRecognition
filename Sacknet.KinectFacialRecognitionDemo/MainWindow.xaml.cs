@@ -146,8 +146,10 @@ namespace Sacknet.KinectFacialRecognitionDemo
 
                         if (!string.IsNullOrEmpty(face.Key))
                         {
+                            var score = Math.Round(face.ProcessorResults.First().Score, 2);
+
                             // Write the key on the image...
-                            g.DrawString(face.Key, new Font("Arial", 100), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
+                            g.DrawString(face.Key + ": " + score, new Font("Arial", 100), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
                         }
                     }
 

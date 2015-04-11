@@ -15,5 +15,10 @@ namespace Sacknet.KinectFacialRecognition
         /// Gets the key of the detected face
         /// </summary>
         string Key { get; }
+
+        /// <summary>
+        /// Gets the score (0 is perfect match)
+        /// </summary>
+        double Score { get; }
     }
 }
