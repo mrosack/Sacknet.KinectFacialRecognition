@@ -98,9 +98,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
                     {
                         Image = (Bitmap)eoResult.Image.Clone(),
                         Key = this.NameField.Text,
-                        Deformations = fmResult.Deformations,
-                        HairColor = fmResult.HairColor,
-                        SkinColor = fmResult.SkinColor
+                        Normalized3DFacePoints = fmResult.Normalized3DFacePoints
                     });
 
                     this.takeTrainingImage = false;
@@ -172,19 +170,9 @@ namespace Sacknet.KinectFacialRecognitionDemo
             public Bitmap Image { get; set; }
 
             /// <summary>
-            /// Gets or sets the detected hair color of the face
+            /// Gets or sets the normalized 3D face points
             /// </summary>
-            public uint HairColor { get; set; }
-
-            /// <summary>
-            /// Gets or sets the detected skin color of the face
-            /// </summary>
-            public uint SkinColor { get; set; }
-
-            /// <summary>
-            /// Gets or sets the detected deformations of the face
-            /// </summary>
-            public IReadOnlyDictionary<FaceShapeDeformations, float> Deformations { get; set; }
+            public List<Point3D> Normalized3DFacePoints { get; set; }
         }
     }
 }

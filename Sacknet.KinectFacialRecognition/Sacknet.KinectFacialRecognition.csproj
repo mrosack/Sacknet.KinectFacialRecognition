@@ -82,6 +82,7 @@
     <Compile Include="ManagedEigenObject\EigenObjectRecognitionProcessorResult.cs" />
     <Compile Include="ManagedEigenObject\EigenObjectRecognizer.cs" />
     <Compile Include="ManagedEigenObject\EigenObjects.cs" />
+    <Compile Include="Point3D.cs" />
     <Compile Include="RecognitionResult.cs" />
     <Compile Include="KinectFacialRecognitionEngine.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -18,19 +18,9 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         public string Key { get; set; }
 
         /// <summary>
-        /// Gets or sets the detected hair color of the face
+        /// Gets or sets the normalized 3D face points
         /// </summary>
-        public uint HairColor { get; set; }
-
-        /// <summary>
-        /// Gets or sets the detected skin color of the face
-        /// </summary>
-        public uint SkinColor { get; set; }
-
-        /// <summary>
-        /// Gets or sets the detected face deformations
-        /// </summary>
-        public IReadOnlyDictionary<FaceShapeDeformations, float> Deformations { get; set; }
+        public List<Point3D> Normalized3DFacePoints { get; set; }
 
         /// <summary>
         /// Gets or sets the score of the match (if Key is set)

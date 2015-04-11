@@ -51,9 +51,7 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
             {
                 var result = new FaceModelRecognitionProcessorResult
                 {
-                    Deformations = trackingResults.FaceModel.FaceShapeDeformations,
-                    HairColor = trackingResults.FaceModel.HairColor,
-                    SkinColor = trackingResults.FaceModel.SkinColor
+                    Normalized3DFacePoints = trackingResults.Normalized3DFacePoints
                 };
 
                 foreach (var targetFace in this.faces)
@@ -76,25 +74,20 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         /// </summary>
         public float ScoreFaceDifferences(IFaceModelTargetFace subject, IFaceModelTargetFace target)
         {
+            if (subject.Normalized3DFacePoints.Count != target.Normalized3DFacePoints.Count)
+                return 0;
+
             float score = 0;
 
-            if (subject.HairColor != target.HairColor)
-                score -= 5;
-
-            if (subject.SkinColor != target.SkinColor)
-                score -= 15;
-
-            foreach (FaceShapeDeformations deformation in Enum.GetValues(typeof(FaceShapeDeformations)))
+            for (int i = 0; i < subject.Normalized3DFacePoints.Count; i++)
             {
-                if (!subject.Deformations.ContainsKey(deformation) || target.Deformations.ContainsKey(deformation))
-                    continue;
+                var s = subject.Normalized3DFacePoints[i];
+                var t = target.Normalized3DFacePoints[i];
+                var distance = (float)Math.Sqrt(Math.Pow(s.X - t.X, 2) + Math.Pow(s.Y - t.Y, 2) + Math.Pow(s.Z - t.Z, 2));
 
-                var deformationDifference = Math.Abs(subject.Deformations[deformation] - target.Deformations[deformation]);
-                if (deformationDifference > 1)
-                    deformationDifference = 1;
-
-                // Maximum score of 1 per deformation point
-                score += 1 - deformationDifference;
+                // good distance is < 0.003
+                if (distance < 0.003)
+                    score += 1;
             }
 
             return score;

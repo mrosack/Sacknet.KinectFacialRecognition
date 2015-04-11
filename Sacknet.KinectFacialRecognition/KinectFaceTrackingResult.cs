@@ -31,16 +31,20 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Initializes a new instance of the KinectFaceTrackingResult class from a set of Kinect face points
         /// </summary>
-        public KinectFaceTrackingResult(FaceModel faceModel, IReadOnlyList<CameraSpacePoint> vertices, CoordinateMapper mapper)
+        public KinectFaceTrackingResult(FaceModel faceModel, FaceAlignment faceAlignment, CoordinateMapper mapper)
         {
             this.FaceModel = faceModel;
-            this.FacePoints = this.FaceBoundaryPoints(vertices, mapper);
+            this.FaceAlignment = faceAlignment;
+
+            var vertices = faceModel.CalculateVerticesForAlignment(faceAlignment);
+            this.ColorSpaceFacePoints = this.FaceBoundaryPoints(vertices, mapper);
+            this.Normalized3DFacePoints = CalculateNormalized3DFacePoints(vertices, this.FaceAlignment);
 
             // Calculate facerect manually from facepoints
-            var rectX = this.FacePoints.Min(x => x.X);
-            var rectWidth = this.FacePoints.Max(x => x.X) - rectX;
-            var rectY = this.FacePoints.Min(x => x.Y);
-            var rectHeight = this.FacePoints.Max(x => x.Y) - rectY;
+            var rectX = this.ColorSpaceFacePoints.Min(x => x.X);
+            var rectWidth = this.ColorSpaceFacePoints.Max(x => x.X) - rectX;
+            var rectY = this.ColorSpaceFacePoints.Min(x => x.Y);
+            var rectHeight = this.ColorSpaceFacePoints.Max(x => x.Y) - rectY;
 
             this.FaceRect = new System.Drawing.Rectangle(rectX, rectY, rectWidth, rectHeight);
         }
@@ -51,14 +55,95 @@ namespace Sacknet.KinectFacialRecognition
         public FaceModel FaceModel { get; private set; }
 
         /// <summary>
+        /// Gets the face alignment
+        /// </summary>
+        public FaceAlignment FaceAlignment { get; private set; }
+
+        /// <summary>
         /// Gets the outline of the face
         /// </summary>
-        public List<System.Drawing.Point> FacePoints { get; private set; }
+        public List<System.Drawing.Point> ColorSpaceFacePoints { get; private set; }
+
+        /// <summary>
+        /// Gets the normalized 3D face points
+        /// </summary>
+        public List<Point3D> Normalized3DFacePoints { get; private set; }
 
         /// <summary>
         /// Gets the face bounding box
         /// </summary>
         public System.Drawing.Rectangle FaceRect { get; private set; }
+
+        /// <summary>
+        /// Calculates normalized 3D face points
+        /// </summary>
+        private static List<Point3D> CalculateNormalized3DFacePoints(IReadOnlyList<CameraSpacePoint> vertices, FaceAlignment alignment)
+        {
+            float pitch, yaw, roll;
+            ExtractFaceRotationInDegrees(alignment.FaceOrientation, out pitch, out yaw, out roll);
+            Console.WriteLine("X: {0}, Y: {1}, Z: {2}", pitch, yaw, roll);
+
+            var result = new List<Point3D>();
+            float maxValue = 0;
+
+            foreach (var vertex in vertices)
+            {
+                var x = vertex.X - alignment.HeadPivotPoint.X;
+                var y = vertex.Y - alignment.HeadPivotPoint.Y;
+                var z = vertex.Z - alignment.HeadPivotPoint.Z;
+
+                RotateX3D(pitch * -1, ref y, ref z);
+                RotateY3D(yaw * -1, ref x, ref z);
+                RotateZ3D(roll * -1, ref x, ref y);
+
+                result.Add(new Point3D { X = x, Y = y, Z = z });
+
+                maxValue = Math.Max(maxValue, Math.Abs(x));
+                maxValue = Math.Max(maxValue, Math.Abs(y));
+                maxValue = Math.Max(maxValue, Math.Abs(z));
+            }
+
+            var ratio = 1 / maxValue;
+
+            foreach (var point in result)
+            {
+                point.X *= ratio;
+                point.Y *= ratio;
+                point.Z *= ratio;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Rotates delta radians around the Z axis
+        /// </summary>
+        private static void RotateZ3D(float delta, ref float x, ref float y)
+        {
+            var sin = (float)Math.Sin(delta);
+            var cos = (float)Math.Cos(delta);
+            var origX = x;
+            var origY = y;
+
+            x = (origX * cos) - (origY * sin);
+            y = (origY * cos) + (origX * sin);
+        }
+
+        /// <summary>
+        /// Rotates delta radians around the Y axis
+        /// </summary>
+        private static void RotateY3D(float delta, ref float x, ref float z)
+        {
+            RotateZ3D(delta, ref x, ref z);
+        }
+
+        /// <summary>
+        /// Rotates delta radians around the X axis
+        /// </summary>
+        private static void RotateX3D(float delta, ref float y, ref float z)
+        {
+            RotateZ3D(delta, ref y, ref z);
+        }
 
         /// <summary>
         /// Since the HighDetailFacePoints aren't well documented, this is some code I used to figure out which ones to use to get the face outline
@@ -95,6 +180,27 @@ namespace Sacknet.KinectFacialRecognition
                 var maxDistance = vertexMapGroup.Max(x => x.Distance);
                 return vertexMapGroup.First(x => x.Distance == maxDistance).Index;
             }).ToList();
+        }
+
+        /// <summary>
+        /// Converts rotation quaternion to Euler angles 
+        /// And then maps them to a specified range of values to control the refresh rate
+        /// </summary>
+        /// <param name="rotQuaternion">face rotation quaternion</param>
+        /// <param name="pitch">rotation about the X-axis</param>
+        /// <param name="yaw">rotation about the Y-axis</param>
+        /// <param name="roll">rotation about the Z-axis</param>
+        private static void ExtractFaceRotationInDegrees(Vector4 rotQuaternion, out float pitch, out float yaw, out float roll)
+        {
+            double x = rotQuaternion.X;
+            double y = rotQuaternion.Y;
+            double z = rotQuaternion.Z;
+            double w = rotQuaternion.W;
+
+            // convert face rotation quaternion to Euler angles in degrees
+            pitch = (float)Math.Atan2(2 * ((y * z) + (w * x)), (w * w) - (x * x) - (y * y) + (z * z));
+            yaw = (float)Math.Asin(2 * ((w * y) - (x * z))) * -1;
+            roll = (float)Math.Atan2(2 * ((x * y) + (w * z)), (w * w) + (x * x) - (y * y) - (z * z));
         }
 
         /// <summary>

@@ -168,8 +168,7 @@ namespace Sacknet.KinectFacialRecognition
 
             if (this.faceModel != null)
             {
-                var vertices = this.faceModel.CalculateVerticesForAlignment(this.faceAlignment);
-                var trackingResults = new KinectFaceTrackingResult(this.faceModel, vertices, this.Kinect.CoordinateMapper);
+                var trackingResults = new KinectFaceTrackingResult(this.faceModel, this.faceAlignment, this.Kinect.CoordinateMapper);
 
                 if (this.Processors.Any() && this.ProcessingEnabled)
                 {
@@ -180,14 +179,28 @@ namespace Sacknet.KinectFacialRecognition
                         // Create a path tracing the face and draw on the processed image
                         origPath = new GraphicsPath();
 
-                        foreach (var point in trackingResults.FacePoints)
+                        foreach (var point in trackingResults.ColorSpaceFacePoints)
                         {
                             origPath.AddLine(point, point);
                         }
 
                         origPath.CloseFigure();
-                        g.DrawPath(new Pen(Color.Red, 2), origPath);
+                        g.DrawPath(new Pen(Color.Red, 5), origPath);
                     }
+
+                    /*using (var g = Graphics.FromImage(result.ProcessedBitmap))
+                    {
+                        //g.FillRectangle(new SolidBrush(Color.Red), 200, 200, 500, 500);
+                        foreach (var point in trackingResults.Normalized3DFacePoints)
+                        {
+                            var intensity = (int)(point.Z * 100) + 100;
+                            var x = (point.X * 500) + 500;
+                            var y = (point.Y * -500) + 500;
+                            var brush = new SolidBrush(Color.FromArgb(intensity, intensity, intensity));
+                            //var brush = new SolidBrush(Color.Red);
+                            g.FillRectangle(brush, x, y, 5, 5);
+                        }
+                    }*/
 
                     var minX = (int)origPath.PathPoints.Min(x => x.X);
                     var maxX = (int)origPath.PathPoints.Max(x => x.X);
@@ -199,7 +212,7 @@ namespace Sacknet.KinectFacialRecognition
                     // Create a cropped path tracing the face...
                     var croppedPath = new GraphicsPath();
 
-                    foreach (var point in trackingResults.FacePoints)
+                    foreach (var point in trackingResults.ColorSpaceFacePoints)
                     {
                         var croppedPoint = new System.Drawing.Point(point.X - minX, point.Y - minY);
                         croppedPath.AddLine(croppedPoint, croppedPoint);
