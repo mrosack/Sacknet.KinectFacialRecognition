@@ -52,7 +52,7 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         /// <summary>
         /// Attempt to find a trained face
         /// </summary>
-        public IRecognitionProcessorResult Process(Bitmap croppedBmp, KinectFaceTrackingResult trackingResults)
+        public IRecognitionProcessorResult Process(Bitmap colorSpaceBitmap, KinectFaceTrackingResult trackingResults)
         {
             lock (this.processingMutex)
             {

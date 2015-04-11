@@ -71,27 +71,30 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Attempt to find a trained face in the original bitmap
         /// </summary>
-        public IRecognitionProcessorResult Process(Bitmap croppedBmp, KinectFaceTrackingResult trackingResults)
+        public IRecognitionProcessorResult Process(Bitmap colorSpaceBitmap, KinectFaceTrackingResult trackingResults)
         {
             lock (this.processingMutex)
             {
-                using (var grayBmp = croppedBmp.MakeGrayscale(100, 100))
+                using (var croppedBmp = trackingResults.GetCroppedFace(colorSpaceBitmap))
                 {
-                    grayBmp.HistogramEqualize();
-
-                    string key = null;
-                    float eigenDistance = -1;
-
-                    if (this.Recognizer != null)
-                        key = this.Recognizer.Recognize(grayBmp, out eigenDistance);
-
-                    // Save detection info
-                    return new EigenObjectRecognitionProcessorResult
+                    using (var grayBmp = croppedBmp.MakeGrayscale(100, 100))
                     {
-                        EigenDistance = eigenDistance,
-                        Image = (Bitmap)grayBmp.Clone(),
-                        Key = key
-                    };
+                        grayBmp.HistogramEqualize();
+
+                        string key = null;
+                        float eigenDistance = -1;
+
+                        if (this.Recognizer != null)
+                            key = this.Recognizer.Recognize(grayBmp, out eigenDistance);
+
+                        // Save detection info
+                        return new EigenObjectRecognitionProcessorResult
+                        {
+                            EigenDistance = eigenDistance,
+                            Image = (Bitmap)grayBmp.Clone(),
+                            Key = key
+                        };
+                    }
                 }
             }
         }

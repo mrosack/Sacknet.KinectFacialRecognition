@@ -3,11 +3,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Facial Recognition Demo" Height="480" Width="640" ResizeMode="NoResize">
     <Grid>
-        <Image x:Name="Video" Width="320" Height="240" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" />
+        <StackPanel Orientation="Horizontal" Height="20" VerticalAlignment="Top">
+            <TextBlock VerticalAlignment="Center">Recognition Mode:</TextBlock>
+            <RadioButton x:Name="radioFaceModelBuilder" VerticalAlignment="Center" Margin="20,0,0,0" IsChecked="True" GroupName="RecognitionMode">Kinect 2 Face Model Builder</RadioButton>
+            <RadioButton x:Name="radioPca" VerticalAlignment="Center" Margin="20,0,0,0" GroupName="RecognitionMode">PCA</RadioButton>
+        </StackPanel>
+        <Image x:Name="Video" Width="320" Height="240" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20" />
         <TextBlock Text="Enter your name and press capture - a training picture will be taken in 2 seconds.  You must have at least 2 training images to enable recognition." Width="320" HorizontalAlignment="Left" TextWrapping="Wrap" Margin="5,260,0,0" />
         <TextBox x:Name="NameField" Height="25" Width="200" HorizontalAlignment="Left" VerticalAlignment="Top" Text="Face 1" Margin="60,330,0,0" />
         <Button x:Name="TrainButton" Click="Train" Height="30" Width="100" Content="Train!" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="110,370,0,0" />
-        <ItemsControl x:Name="TrainedFaces" Margin="320,0,0,0">
+        <ItemsControl x:Name="TrainedFaces" Margin="360,0,0,0">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">

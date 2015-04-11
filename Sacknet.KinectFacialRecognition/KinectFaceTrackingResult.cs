@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using Microsoft.Kinect;
@@ -31,15 +33,15 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Initializes a new instance of the KinectFaceTrackingResult class from a set of Kinect face points
         /// </summary>
-        public KinectFaceTrackingResult(FaceModel faceModel, FaceModel constructedFaceModel, FaceAlignment faceAlignment, CoordinateMapper mapper)
+        public KinectFaceTrackingResult(FaceModel faceModel, FaceModel constructedFaceModel, FaceModelBuilderCollectionStatus builderStatus, FaceAlignment faceAlignment, CoordinateMapper mapper)
         {
             this.FaceModel = faceModel;
             this.ConstructedFaceModel = constructedFaceModel;
+            this.BuilderStatus = builderStatus;
             this.FaceAlignment = faceAlignment;
 
             var vertices = faceModel.CalculateVerticesForAlignment(faceAlignment);
             this.ColorSpaceFacePoints = this.FaceBoundaryPoints(vertices, mapper);
-            this.Normalized3DFacePoints = CalculateNormalized3DFacePoints(vertices, this.FaceAlignment);
 
             // Calculate facerect manually from facepoints
             var rectX = this.ColorSpaceFacePoints.Min(x => x.X);
@@ -61,6 +63,11 @@ namespace Sacknet.KinectFacialRecognition
         public FaceModel ConstructedFaceModel { get; private set; }
 
         /// <summary>
+        /// Gets the status of the face builder
+        /// </summary>
+        public FaceModelBuilderCollectionStatus BuilderStatus { get; private set; }
+
+        /// <summary>
         /// Gets the face alignment
         /// </summary>
         public FaceAlignment FaceAlignment { get; private set; }
@@ -71,83 +78,64 @@ namespace Sacknet.KinectFacialRecognition
         public List<System.Drawing.Point> ColorSpaceFacePoints { get; private set; }
 
         /// <summary>
-        /// Gets the normalized 3D face points
-        /// </summary>
-        public List<Point3D> Normalized3DFacePoints { get; private set; }
-
-        /// <summary>
         /// Gets the face bounding box
         /// </summary>
         public System.Drawing.Rectangle FaceRect { get; private set; }
 
         /// <summary>
-        /// Calculates normalized 3D face points
+        /// Gets a path tracing the face in the color space
         /// </summary>
-        private static List<Point3D> CalculateNormalized3DFacePoints(IReadOnlyList<CameraSpacePoint> vertices, FaceAlignment alignment)
+        public GraphicsPath GetFacePath()
         {
-            float pitch, yaw, roll;
-            ExtractFaceRotationInDegrees(alignment.FaceOrientation, out pitch, out yaw, out roll);
+            // Create a path tracing the face and draw on the processed image
+            var path = new GraphicsPath();
 
-            var result = new List<Point3D>();
-            float maxValue = 0;
-
-            foreach (var vertex in vertices)
+            foreach (var point in this.ColorSpaceFacePoints)
             {
-                var x = vertex.X - alignment.HeadPivotPoint.X;
-                var y = vertex.Y - alignment.HeadPivotPoint.Y;
-                var z = vertex.Z - alignment.HeadPivotPoint.Z;
-
-                RotateX3D(pitch * -1, ref y, ref z);
-                RotateY3D(yaw * -1, ref x, ref z);
-                RotateZ3D(roll * -1, ref x, ref y);
-
-                result.Add(new Point3D { X = x, Y = y, Z = z });
-
-                maxValue = Math.Max(maxValue, Math.Abs(x));
-                maxValue = Math.Max(maxValue, Math.Abs(y));
-                maxValue = Math.Max(maxValue, Math.Abs(z));
+                path.AddLine(point, point);
             }
 
-            var ratio = 1 / maxValue;
+            path.CloseFigure();
 
-            foreach (var point in result)
+            return path;
+        }
+
+        /// <summary>
+        /// Returns a cropped image of the face from the color space bitmap
+        /// </summary>
+        public Bitmap GetCroppedFace(Bitmap colorSpaceBitmap)
+        {
+            GraphicsPath origPath = this.GetFacePath();
+
+            var minX = (int)origPath.PathPoints.Min(x => x.X);
+            var maxX = (int)origPath.PathPoints.Max(x => x.X);
+            var minY = (int)origPath.PathPoints.Min(x => x.Y);
+            var maxY = (int)origPath.PathPoints.Max(x => x.Y);
+            var width = maxX - minX;
+            var height = maxY - minY;
+
+            // Create a cropped path tracing the face...
+            var croppedPath = new GraphicsPath();
+
+            foreach (var point in this.ColorSpaceFacePoints)
             {
-                point.X *= ratio;
-                point.Y *= ratio;
-                point.Z *= ratio;
+                var croppedPoint = new System.Drawing.Point(point.X - minX, point.Y - minY);
+                croppedPath.AddLine(croppedPoint, croppedPoint);
             }
 
-            return result;
-        }
+            croppedPath.CloseFigure();
 
-        /// <summary>
-        /// Rotates delta radians around the Z axis
-        /// </summary>
-        private static void RotateZ3D(float delta, ref float x, ref float y)
-        {
-            var sin = (float)Math.Sin(delta);
-            var cos = (float)Math.Cos(delta);
-            var origX = x;
-            var origY = y;
+            // ...and create a cropped image to use for facial recognition
+            var croppedBmp = new Bitmap(width, height);
 
-            x = (origX * cos) - (origY * sin);
-            y = (origY * cos) + (origX * sin);
-        }
+            using (var croppedG = Graphics.FromImage(croppedBmp))
+            {
+                croppedG.FillRectangle(Brushes.Gray, 0, 0, width, height);
+                croppedG.SetClip(croppedPath);
+                croppedG.DrawImage(colorSpaceBitmap, minX * -1, minY * -1);
+            }
 
-        /// <summary>
-        /// Rotates delta radians around the Y axis
-        /// </summary>
-        private static void RotateY3D(float delta, ref float x, ref float z)
-        {
-            RotateZ3D(delta, ref x, ref z);
-        }
-
-        /// <summary>
-        /// Rotates delta radians around the X axis
-        /// </summary>
-        private static void RotateX3D(float delta, ref float y, ref float z)
-        {
-            RotateZ3D(delta, ref y, ref z);
+            return croppedBmp;
         }
 
         /// <summary>
@@ -185,27 +173,6 @@ namespace Sacknet.KinectFacialRecognition
                 var maxDistance = vertexMapGroup.Max(x => x.Distance);
                 return vertexMapGroup.First(x => x.Distance == maxDistance).Index;
             }).ToList();
-        }
-
-        /// <summary>
-        /// Converts rotation quaternion to Euler angles 
-        /// And then maps them to a specified range of values to control the refresh rate
-        /// </summary>
-        /// <param name="rotQuaternion">face rotation quaternion</param>
-        /// <param name="pitch">rotation about the X-axis</param>
-        /// <param name="yaw">rotation about the Y-axis</param>
-        /// <param name="roll">rotation about the Z-axis</param>
-        private static void ExtractFaceRotationInDegrees(Vector4 rotQuaternion, out float pitch, out float yaw, out float roll)
-        {
-            double x = rotQuaternion.X;
-            double y = rotQuaternion.Y;
-            double z = rotQuaternion.Z;
-            double w = rotQuaternion.W;
-
-            // convert face rotation quaternion to Euler angles in degrees
-            pitch = (float)Math.Atan2(2 * ((y * z) + (w * x)), (w * w) - (x * x) - (y * y) + (z * z));
-            yaw = (float)Math.Asin(2 * ((w * y) - (x * z))) * -1;
-            roll = (float)Math.Atan2(2 * ((x * y) + (w * z)), (w * w) + (x * x) - (y * y) - (z * z));
         }
 
         /// <summary>

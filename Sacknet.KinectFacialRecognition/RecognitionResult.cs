@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,14 +14,9 @@ namespace Sacknet.KinectFacialRecognition
     public class RecognitionResult : IDisposable
     {
         /// <summary>
-        /// Gets or sets the original color frame
+        /// Gets or sets the color space bitmap from the kinect
         /// </summary>
-        public Bitmap OriginalBitmap { get; set; }
-
-        /// <summary>
-        /// Gets or sets the processed color frame (with a boundary drawn around the face)
-        /// </summary>
-        public Bitmap ProcessedBitmap { get; set; }
+        public Bitmap ColorSpaceBitmap { get; set; }
 
         /// <summary>
         /// Gets or sets a list of faces detected in the image
@@ -32,16 +28,10 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         public void Dispose()
         {
-            if (this.OriginalBitmap != null)
+            if (this.ColorSpaceBitmap != null)
             {
-                this.OriginalBitmap.Dispose();
-                this.OriginalBitmap = null;
-            }
-
-            if (this.ProcessedBitmap != null)
-            {
-                this.ProcessedBitmap.Dispose();
-                this.ProcessedBitmap = null;
+                this.ColorSpaceBitmap.Dispose();
+                this.ColorSpaceBitmap = null;
             }
 
             if (this.Faces != null)

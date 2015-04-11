@@ -69,6 +69,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions.cs" />
     <Compile Include="KinectFaceModel\FaceModelRecognitionProcessor.cs" />
     <Compile Include="KinectFaceModel\FaceModelRecognitionProcessorResult.cs" />
     <Compile Include="IRecognitionProcessor.cs" />

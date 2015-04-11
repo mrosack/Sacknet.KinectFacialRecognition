@@ -29,6 +29,7 @@ namespace Sacknet.KinectFacialRecognition
         private ulong? currentTrackingId;
         private FaceModelBuilder fmb = null;
         private object processFaceModelMutex = new object();
+        private bool constructionInProcess = false;
 
         private Body[] bodies;
         private MultiSourceFrameReader msReader;
@@ -88,12 +89,17 @@ namespace Sacknet.KinectFacialRecognition
         /// Gets the active Kinect sensor
         /// </summary>
         protected KinectSensor Kinect { get; private set; }
-
+        
         /// <summary>
         /// Disposes the object
         /// </summary>
         public void Dispose()
         {
+            lock (this.processFaceModelMutex)
+            {
+                this.DisposeFaceModelBuilder();
+            }
+
             this.msReader.MultiSourceFrameArrived -= this.MultiSourceFrameArrived;
             this.msReader.Dispose();
 
@@ -127,21 +133,21 @@ namespace Sacknet.KinectFacialRecognition
 
             if (newTrackingId.HasValue && this.currentTrackingId != newTrackingId)
             {
-                this.currentTrackingId = newTrackingId;
-
-                if (this.fmb != null)
+                if (Monitor.TryEnter(this.processFaceModelMutex, 100))
                 {
-                    this.FaceModelBuilderCollectionCompleted(null, null);
-                }
-
-                if (this.faceModel.FaceShapeDeformations.All(x => x.Value == 0))
-                {
-                    lock (this.processFaceModelMutex)
+                    try
                     {
-                        Console.WriteLine("Creating new builder...");
+                        Console.WriteLine("Creating FaceModelBuilder");
+                        this.currentTrackingId = newTrackingId;
+                        this.constructedFaceModel = null;
+                        this.DisposeFaceModelBuilder();
                         this.fmb = this.faceSource.OpenModelBuilder(FaceModelBuilderAttributes.HairColor | FaceModelBuilderAttributes.SkinColor);
                         this.fmb.BeginFaceDataCollection();
                         this.fmb.CollectionCompleted += this.FaceModelBuilderCollectionCompleted;
+                    }
+                    finally
+                    {
+                        Monitor.Exit(this.processFaceModelMutex);
                     }
                 }
             }
@@ -167,27 +173,43 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         private void FaceModelBuilderCollectionCompleted(object sender, FaceModelBuilderCollectionCompletedEventArgs e)
         {
-            if (e != null)
+            ThreadPool.QueueUserWorkItem((wc) =>
             {
-                ThreadPool.QueueUserWorkItem((cb) =>
+                if (Monitor.TryEnter(this.processFaceModelMutex, 100))
                 {
-                    lock (processFaceModelMutex)
+                    try
                     {
-                        this.constructedFaceModel = e.ModelData.ProduceFaceModel();
-                    }
-                });
+                        if (this.fmb == null)
+                            return;
 
-                var localFmb = this.fmb;
-                this.fmb = null;
-                localFmb.Dispose();
-                Console.WriteLine("Complete!");
-            }
-            else
-            {
-                lock (this.processFaceModelMutex)
-                {
-                    this.constructedFaceModel = null;
+                        this.constructionInProcess = true;
+
+                        this.fmb.CollectionCompleted -= this.FaceModelBuilderCollectionCompleted;
+                        this.constructedFaceModel = e.ModelData.ProduceFaceModel();
+                        this.DisposeFaceModelBuilder();
+
+                        this.constructionInProcess = false;
+                    }
+                    finally
+                    {
+                        Monitor.Exit(this.processFaceModelMutex);
+                    }
                 }
+            });
+        }
+
+        /// <summary>
+        /// Disposes the face model builder
+        /// </summary>
+        private void DisposeFaceModelBuilder()
+        {
+            var localFmb = this.fmb;
+            this.fmb = null;
+
+            if (localFmb != null)
+            {
+                localFmb.CollectionCompleted -= this.FaceModelBuilderCollectionCompleted;
+                localFmb.Dispose();
             }
         }
 
@@ -237,90 +259,32 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         private void RecognizerWorker_DoWork(object sender, DoWorkEventArgs e)
         {
+            var status = FaceModelBuilderCollectionStatus.Complete;
+
+            if (!this.constructionInProcess && this.fmb != null)
+                status = this.fmb.CollectionStatus;
+
+            var faceTrackingResult = new KinectFaceTrackingResult(this.faceModel, this.constructedFaceModel, status, this.faceAlignment, this.Kinect.CoordinateMapper);
+
             var result = new RecognitionResult();
-            result.OriginalBitmap = this.ImageToBitmap(this.colorImageBuffer, this.imageWidth, this.imageHeight);
-            result.ProcessedBitmap = (Bitmap)result.OriginalBitmap.Clone();
+            result.ColorSpaceBitmap = this.ImageToBitmap(this.colorImageBuffer, this.imageWidth, this.imageHeight);
             e.Result = result;
-
-            if (this.fmb != null)
-                Console.WriteLine(this.fmb.CollectionStatus.ToString());
-
-            var trackingResults = new KinectFaceTrackingResult(this.faceModel, this.constructedFaceModel, this.faceAlignment, this.Kinect.CoordinateMapper);
 
             if (this.Processors.Any() && this.ProcessingEnabled)
             {
-                GraphicsPath origPath;
+                var rpResults = new List<IRecognitionProcessorResult>();
 
-                using (var g = Graphics.FromImage(result.ProcessedBitmap))
+                foreach (var processor in this.Processors)
+                    rpResults.Add(processor.Process(result.ColorSpaceBitmap, faceTrackingResult));
+
+                result.Faces = new List<TrackedFace>
                 {
-                    // Create a path tracing the face and draw on the processed image
-                    origPath = new GraphicsPath();
-
-                    foreach (var point in trackingResults.ColorSpaceFacePoints)
+                    new TrackedFace
                     {
-                        origPath.AddLine(point, point);
+                        ProcessorResults = rpResults,
+                        TrackingResult = faceTrackingResult
                     }
-
-                    origPath.CloseFigure();
-                    g.DrawPath(new Pen(Color.Red, 5), origPath);
-                }
-
-                /*using (var g = Graphics.FromImage(result.ProcessedBitmap))
-                {
-                    //g.FillRectangle(new SolidBrush(Color.Red), 200, 200, 500, 500);
-                    foreach (var point in trackingResults.Normalized3DFacePoints)
-                    {
-                        var intensity = (int)(point.Z * 100) + 100;
-                        var x = (point.X * 500) + 500;
-                        var y = (point.Y * -500) + 500;
-                        var brush = new SolidBrush(Color.FromArgb(intensity, intensity, intensity));
-                        //var brush = new SolidBrush(Color.Red);
-                        g.FillRectangle(brush, x, y, 5, 5);
-                    }
-                }*/
-
-                var minX = (int)origPath.PathPoints.Min(x => x.X);
-                var maxX = (int)origPath.PathPoints.Max(x => x.X);
-                var minY = (int)origPath.PathPoints.Min(x => x.Y);
-                var maxY = (int)origPath.PathPoints.Max(x => x.Y);
-                var width = maxX - minX;
-                var height = maxY - minY;
-
-                // Create a cropped path tracing the face...
-                var croppedPath = new GraphicsPath();
-
-                foreach (var point in trackingResults.ColorSpaceFacePoints)
-                {
-                    var croppedPoint = new System.Drawing.Point(point.X - minX, point.Y - minY);
-                    croppedPath.AddLine(croppedPoint, croppedPoint);
-                }
-
-                croppedPath.CloseFigure();
-
-                // ...and create a cropped image to use for facial recognition
-                using (var croppedBmp = new Bitmap(width, height))
-                {
-                    using (var croppedG = Graphics.FromImage(croppedBmp))
-                    {
-                        croppedG.FillRectangle(Brushes.Gray, 0, 0, width, height);
-                        croppedG.SetClip(croppedPath);
-                        croppedG.DrawImage(result.OriginalBitmap, minX * -1, minY * -1);
-                    }
-
-                    var rpResults = new List<IRecognitionProcessorResult>();
-
-                    foreach (var processor in this.Processors)
-                        rpResults.Add(processor.Process(croppedBmp, trackingResults));
-
-                    result.Faces = new List<TrackedFace>
-                    {
-                        new TrackedFace
-                        {
-                            ProcessorResults = rpResults,
-                            TrackingResults = trackingResults
-                        }
-                    };
-                }
+                };
             }
 
             this.faceReady = false;

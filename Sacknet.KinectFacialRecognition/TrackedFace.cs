@@ -14,7 +14,7 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Gets or sets the results from kinect face tracking
         /// </summary>
-        public KinectFaceTrackingResult TrackingResults { get; set; }
+        public KinectFaceTrackingResult TrackingResult { get; set; }
 
         /// <summary>
         /// Gets or sets the results from all enabled recognition processors

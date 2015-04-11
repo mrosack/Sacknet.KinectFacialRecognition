@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -24,21 +25,24 @@ namespace Sacknet.KinectFacialRecognitionDemo
         private bool takeTrainingImage = false;
         private KinectFacialRecognitionEngine engine;
         private ObservableCollection<BitmapSourceTargetFace> targetFaces = new ObservableCollection<BitmapSourceTargetFace>();
-        private EigenObjectRecognitionProcessor eorProcessor = new EigenObjectRecognitionProcessor();
-        private FaceModelRecognitionProcessor fmrProcessor = new FaceModelRecognitionProcessor();
+
+        private IRecognitionProcessor activeProcessor;
+        private KinectSensor kinectSensor;
 
         /// <summary>
         /// Initializes a new instance of the MainWindow class
         /// </summary>
         public MainWindow()
         {
-            KinectSensor kinectSensor = KinectSensor.GetDefault();
-            kinectSensor.Open();
-
-            this.engine = new KinectFacialRecognitionEngine(kinectSensor, this.eorProcessor, this.fmrProcessor);
-            this.engine.RecognitionComplete += this.Engine_RecognitionComplete;
+            this.kinectSensor = KinectSensor.GetDefault();
+            this.kinectSensor.Open();
 
             this.InitializeComponent();
+
+            this.LoadProcessor();
+
+            this.radioFaceModelBuilder.Checked += (sender, e) => { this.LoadProcessor(); };
+            this.radioPca.Checked += (sender, e) => { this.LoadProcessor(); };
 
             this.TrainedFaces.ItemsSource = this.targetFaces;
         }
@@ -69,6 +73,29 @@ namespace Sacknet.KinectFacialRecognitionDemo
         }
 
         /// <summary>
+        /// Loads the correct procesor based on the selected radio button
+        /// </summary>
+        private void LoadProcessor()
+        {
+            if (this.radioFaceModelBuilder.IsChecked.GetValueOrDefault())
+                this.activeProcessor = new FaceModelRecognitionProcessor();
+            else
+                this.activeProcessor = new EigenObjectRecognitionProcessor();
+
+            this.LoadAllTargetFaces();
+            this.UpdateTargetFaces();
+
+            if (this.engine != null)
+            {
+                this.engine.RecognitionComplete -= this.Engine_RecognitionComplete;
+                this.engine.Dispose();
+            }
+
+            this.engine = new KinectFacialRecognitionEngine(this.kinectSensor, this.activeProcessor);
+            this.engine.RecognitionComplete += this.Engine_RecognitionComplete;
+        }
+
+        /// <summary>
         /// Handles recognition complete events
         /// </summary>
         private void Engine_RecognitionComplete(object sender, RecognitionResult e)
@@ -78,49 +105,137 @@ namespace Sacknet.KinectFacialRecognitionDemo
             if (e.Faces != null)
                 face = e.Faces.FirstOrDefault();
 
-            if (face != null)
+            using (var processedBitmap = (Bitmap)e.ColorSpaceBitmap.Clone())
             {
-                if (!string.IsNullOrEmpty(face.Key))
+                if (face != null)
                 {
-                    // Write the key on the image...
-                    using (var g = Graphics.FromImage(e.ProcessedBitmap))
+                    using (var g = Graphics.FromImage(processedBitmap))
                     {
-                        var rect = face.TrackingResults.FaceRect;
-                        g.DrawString(face.Key, new Font("Arial", 100), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
+                        var isFmb = this.radioFaceModelBuilder.IsChecked.GetValueOrDefault();
+                        var rect = face.TrackingResult.FaceRect;
+                        var faceOutlineColor = Color.Green;
+
+                        if (isFmb)
+                        {
+                            if (face.TrackingResult.ConstructedFaceModel == null)
+                            {
+                                faceOutlineColor = Color.Red;
+                                
+                                if (face.TrackingResult.BuilderStatus == FaceModelBuilderCollectionStatus.Complete)
+                                    faceOutlineColor = Color.Orange;
+                            }
+
+                            var scale = (rect.Width + rect.Height) / 6;
+                            var midX = rect.X + (rect.Width / 2);
+                            var midY = rect.Y + (rect.Height / 2);
+
+                            if ((face.TrackingResult.BuilderStatus & FaceModelBuilderCollectionStatus.LeftViewsNeeded) == FaceModelBuilderCollectionStatus.LeftViewsNeeded)
+                                g.FillRectangle(new SolidBrush(Color.Red), rect.X - (scale * 2), midY, scale, scale);
+
+                            if ((face.TrackingResult.BuilderStatus & FaceModelBuilderCollectionStatus.RightViewsNeeded) == FaceModelBuilderCollectionStatus.RightViewsNeeded)
+                                g.FillRectangle(new SolidBrush(Color.Red), rect.X + rect.Width + (scale * 2), midY, scale, scale);
+
+                            if ((face.TrackingResult.BuilderStatus & FaceModelBuilderCollectionStatus.TiltedUpViewsNeeded) == FaceModelBuilderCollectionStatus.TiltedUpViewsNeeded)
+                                g.FillRectangle(new SolidBrush(Color.Red), midX, rect.Y - (scale * 2), scale, scale);
+
+                            if ((face.TrackingResult.BuilderStatus & FaceModelBuilderCollectionStatus.FrontViewFramesNeeded) == FaceModelBuilderCollectionStatus.FrontViewFramesNeeded)
+                                g.FillRectangle(new SolidBrush(Color.Red), midX, midY, scale, scale);
+                        }
+
+                        g.DrawPath(new Pen(faceOutlineColor, 5), face.TrackingResult.GetFacePath());
+
+                        if (!string.IsNullOrEmpty(face.Key))
+                        {
+                            // Write the key on the image...
+                            g.DrawString(face.Key, new Font("Arial", 100), Brushes.Red, new System.Drawing.Point(rect.Left, rect.Top - 25));
+                        }
+                    }
+
+                    if (this.takeTrainingImage)
+                    {
+                        var eoResult = (EigenObjectRecognitionProcessorResult)face.ProcessorResults.SingleOrDefault(x => x is EigenObjectRecognitionProcessorResult);
+                        var fmResult = (FaceModelRecognitionProcessorResult)face.ProcessorResults.SingleOrDefault(x => x is FaceModelRecognitionProcessorResult);
+
+                        var bstf = new BitmapSourceTargetFace();
+                        bstf.Key = this.NameField.Text;
+
+                        if (eoResult != null)
+                        {
+                            bstf.Image = (Bitmap)eoResult.Image.Clone();
+                        }
+                        else
+                        {
+                            bstf.Image = face.TrackingResult.GetCroppedFace(e.ColorSpaceBitmap);
+                        }
+
+                        if (fmResult != null)
+                        {
+                            bstf.Deformations = fmResult.Deformations;
+                            bstf.HairColor = fmResult.HairColor;
+                            bstf.SkinColor = fmResult.SkinColor;
+                        }
+
+                        this.targetFaces.Add(bstf);
+
+                        this.SerializeBitmapSourceTargetFace(bstf);
+
+                        this.takeTrainingImage = false;
+                        this.NameField.Text = this.NameField.Text.Replace(this.targetFaces.Count.ToString(), (this.targetFaces.Count + 1).ToString());
+
+                        this.UpdateTargetFaces();
                     }
                 }
 
-                if (this.takeTrainingImage)
-                {
-                    var eoResult = (EigenObjectRecognitionProcessorResult)face.ProcessorResults.Single(x => x is EigenObjectRecognitionProcessorResult);
-                    var fmResult = (FaceModelRecognitionProcessorResult)face.ProcessorResults.Single(x => x is FaceModelRecognitionProcessorResult);
-
-                    this.targetFaces.Add(new BitmapSourceTargetFace
-                    {
-                        Image = (Bitmap)eoResult.Image.Clone(),
-                        Key = this.NameField.Text,
-                        Deformations = fmResult.Deformations,
-                        HairColor = fmResult.HairColor,
-                        SkinColor = fmResult.SkinColor
-                    });
-
-                    System.IO.File.WriteAllText(DateTime.Now.Ticks.ToString() + ".txt", JsonConvert.SerializeObject(fmResult));
-
-                    this.takeTrainingImage = false;
-                    this.NameField.Text = this.NameField.Text.Replace(this.targetFaces.Count.ToString(), (this.targetFaces.Count + 1).ToString());
-
-                    if (this.targetFaces.Count > 1)
-                    {
-                        this.eorProcessor.SetTargetFaces(this.targetFaces);
-                        this.fmrProcessor.SetTargetFaces(this.targetFaces);
-                    }
-                }
+                this.Video.Source = LoadBitmap(processedBitmap);
             }
-
-            this.Video.Source = LoadBitmap(e.ProcessedBitmap);
             
             // Without an explicit call to GC.Collect here, memory runs out of control :(
             GC.Collect();
+        }
+
+        /// <summary>
+        /// Saves the target face to disk
+        /// </summary>
+        private void SerializeBitmapSourceTargetFace(BitmapSourceTargetFace bstf)
+        {
+            var filenamePrefix = "TF_" + DateTime.Now.Ticks.ToString();
+            var suffix = this.radioFaceModelBuilder.IsChecked.GetValueOrDefault() ? ".fmb" : ".pca";
+            System.IO.File.WriteAllText(filenamePrefix + suffix, JsonConvert.SerializeObject(bstf));
+            bstf.Image.Save(filenamePrefix + ".png");
+        }
+
+        /// <summary>
+        /// Loads all BSTFs from the current directory
+        /// </summary>
+        private void LoadAllTargetFaces()
+        {
+            this.targetFaces.Clear();
+            var result = new List<BitmapSourceTargetFace>();
+            var suffix = this.radioFaceModelBuilder.IsChecked.GetValueOrDefault() ? ".fmb" : ".pca";
+
+            foreach (var file in Directory.GetFiles(".", "TF_*" + suffix))
+            {
+                var bstf = JsonConvert.DeserializeObject<BitmapSourceTargetFace>(File.ReadAllText(file));
+                bstf.Image = (Bitmap)Bitmap.FromFile(file.Replace(suffix, ".png"));
+                this.targetFaces.Add(bstf);
+            }
+        }
+
+        /// <summary>
+        /// Updates the target faces
+        /// </summary>
+        private void UpdateTargetFaces()
+        {
+            if (this.targetFaces.Count > 1)
+            {
+                EigenObjectRecognitionProcessor pcaProcessor = this.activeProcessor as EigenObjectRecognitionProcessor;
+                FaceModelRecognitionProcessor fmProcessor = this.activeProcessor as FaceModelRecognitionProcessor;
+
+                if (pcaProcessor != null)
+                    pcaProcessor.SetTargetFaces(this.targetFaces);
+                else
+                    fmProcessor.SetTargetFaces(this.targetFaces);
+            }
         }
 
         /// <summary>
@@ -146,6 +261,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
         /// <summary>
         /// Target face with a BitmapSource accessor for the face
         /// </summary>
+        [JsonObject(MemberSerialization.OptIn)]
         private class BitmapSourceTargetFace : IEigenObjectTargetFace, IFaceModelTargetFace
         {
             private BitmapSource bitmapSource;
@@ -167,6 +283,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
             /// <summary>
             /// Gets or sets the key returned when this face is found
             /// </summary>
+            [JsonProperty]
             public string Key { get; set; }
 
             /// <summary>
@@ -177,16 +294,19 @@ namespace Sacknet.KinectFacialRecognitionDemo
             /// <summary>
             /// Gets or sets the detected hair color of the face
             /// </summary>
+            [JsonProperty]
             public Color HairColor { get; set; }
 
             /// <summary>
             /// Gets or sets the detected skin color of the face
             /// </summary>
+            [JsonProperty]
             public Color SkinColor { get; set; }
 
             /// <summary>
             /// Gets or sets the detected deformations of the face
             /// </summary>
+            [JsonProperty]
             public IReadOnlyDictionary<FaceShapeDeformations, float> Deformations { get; set; }
         }
     }
