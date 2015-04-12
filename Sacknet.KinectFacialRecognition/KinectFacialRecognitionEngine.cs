@@ -133,22 +133,15 @@ namespace Sacknet.KinectFacialRecognition
 
             if (newTrackingId.HasValue && this.currentTrackingId != newTrackingId)
             {
-                if (Monitor.TryEnter(this.processFaceModelMutex, 100))
+                lock (this.processFaceModelMutex)
                 {
-                    try
-                    {
-                        Console.WriteLine("Creating FaceModelBuilder");
-                        this.currentTrackingId = newTrackingId;
-                        this.constructedFaceModel = null;
-                        this.DisposeFaceModelBuilder();
-                        this.fmb = this.faceSource.OpenModelBuilder(FaceModelBuilderAttributes.HairColor | FaceModelBuilderAttributes.SkinColor);
-                        this.fmb.BeginFaceDataCollection();
-                        this.fmb.CollectionCompleted += this.FaceModelBuilderCollectionCompleted;
-                    }
-                    finally
-                    {
-                        Monitor.Exit(this.processFaceModelMutex);
-                    }
+                    Console.WriteLine("Creating FaceModelBuilder");
+                    this.currentTrackingId = newTrackingId;
+                    this.constructedFaceModel = null;
+                    this.DisposeFaceModelBuilder();
+                    this.fmb = this.faceSource.OpenModelBuilder(FaceModelBuilderAttributes.HairColor | FaceModelBuilderAttributes.SkinColor);
+                    this.fmb.BeginFaceDataCollection();
+                    this.fmb.CollectionCompleted += this.FaceModelBuilderCollectionCompleted;
                 }
             }
 
@@ -175,25 +168,18 @@ namespace Sacknet.KinectFacialRecognition
         {
             ThreadPool.QueueUserWorkItem((wc) =>
             {
-                if (Monitor.TryEnter(this.processFaceModelMutex, 100))
+                lock (this.processFaceModelMutex)
                 {
-                    try
-                    {
-                        if (this.fmb == null)
-                            return;
+                    if (this.fmb == null)
+                        return;
 
-                        this.constructionInProcess = true;
+                    this.constructionInProcess = true;
 
-                        this.fmb.CollectionCompleted -= this.FaceModelBuilderCollectionCompleted;
-                        this.constructedFaceModel = e.ModelData.ProduceFaceModel();
-                        this.DisposeFaceModelBuilder();
+                    this.fmb.CollectionCompleted -= this.FaceModelBuilderCollectionCompleted;
+                    this.constructedFaceModel = e.ModelData.ProduceFaceModel();
+                    this.DisposeFaceModelBuilder();
 
-                        this.constructionInProcess = false;
-                    }
-                    finally
-                    {
-                        Monitor.Exit(this.processFaceModelMutex);
-                    }
+                    this.constructionInProcess = false;
                 }
             });
         }

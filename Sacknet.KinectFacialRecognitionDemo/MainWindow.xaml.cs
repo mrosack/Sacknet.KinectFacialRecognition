@@ -24,27 +24,29 @@ namespace Sacknet.KinectFacialRecognitionDemo
     {
         private bool takeTrainingImage = false;
         private KinectFacialRecognitionEngine engine;
-        private ObservableCollection<BitmapSourceTargetFace> targetFaces = new ObservableCollection<BitmapSourceTargetFace>();
 
         private IRecognitionProcessor activeProcessor;
         private KinectSensor kinectSensor;
+        private MainWindowViewModel viewModel = new MainWindowViewModel();
 
         /// <summary>
         /// Initializes a new instance of the MainWindow class
         /// </summary>
         public MainWindow()
         {
+            this.DataContext = this.viewModel;
+            this.viewModel.TrainName = "Face 1";
+            this.viewModel.ProcessorType = ProcessorTypes.FaceModel;
+            this.viewModel.PropertyChanged += this.ViewModelPropertyChanged;
+            this.viewModel.TrainButtonClicked = new ActionCommand(this.Train);
+            this.viewModel.TrainNameEnabled = true;
+
             this.kinectSensor = KinectSensor.GetDefault();
             this.kinectSensor.Open();
 
             this.InitializeComponent();
 
             this.LoadProcessor();
-
-            this.radioFaceModelBuilder.Checked += (sender, e) => { this.LoadProcessor(); };
-            this.radioPca.Checked += (sender, e) => { this.LoadProcessor(); };
-
-            this.TrainedFaces.ItemsSource = this.targetFaces;
         }
 
         [DllImport("gdi32")]
@@ -73,11 +75,24 @@ namespace Sacknet.KinectFacialRecognitionDemo
         }
 
         /// <summary>
+        /// Raised when a property is changed on the view model
+        /// </summary>
+        private void ViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case "ProcessorType":
+                    this.LoadProcessor();
+                    break;
+            }
+        }
+
+        /// <summary>
         /// Loads the correct procesor based on the selected radio button
         /// </summary>
         private void LoadProcessor()
         {
-            if (this.radioFaceModelBuilder.IsChecked.GetValueOrDefault())
+            if (this.viewModel.ProcessorType == ProcessorTypes.FaceModel)
                 this.activeProcessor = new FaceModelRecognitionProcessor();
             else
                 this.activeProcessor = new EigenObjectRecognitionProcessor();
@@ -107,11 +122,15 @@ namespace Sacknet.KinectFacialRecognitionDemo
 
             using (var processedBitmap = (Bitmap)e.ColorSpaceBitmap.Clone())
             {
-                if (face != null)
+                if (face == null)
+                {
+                    this.viewModel.ReadyForTraining = false;
+                }
+                else
                 {
                     using (var g = Graphics.FromImage(processedBitmap))
                     {
-                        var isFmb = this.radioFaceModelBuilder.IsChecked.GetValueOrDefault();
+                        var isFmb = this.viewModel.ProcessorType == ProcessorTypes.FaceModel;
                         var rect = face.TrackingResult.FaceRect;
                         var faceOutlineColor = Color.Green;
 
@@ -142,6 +161,8 @@ namespace Sacknet.KinectFacialRecognitionDemo
                                 g.FillRectangle(new SolidBrush(Color.Red), midX, midY, scale, scale);
                         }
 
+                        this.viewModel.ReadyForTraining = faceOutlineColor == Color.Green;
+
                         g.DrawPath(new Pen(faceOutlineColor, 5), face.TrackingResult.GetFacePath());
 
                         if (!string.IsNullOrEmpty(face.Key))
@@ -159,7 +180,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
                         var fmResult = (FaceModelRecognitionProcessorResult)face.ProcessorResults.SingleOrDefault(x => x is FaceModelRecognitionProcessorResult);
 
                         var bstf = new BitmapSourceTargetFace();
-                        bstf.Key = this.NameField.Text;
+                        bstf.Key = this.viewModel.TrainName;
 
                         if (eoResult != null)
                         {
@@ -177,18 +198,17 @@ namespace Sacknet.KinectFacialRecognitionDemo
                             bstf.SkinColor = fmResult.SkinColor;
                         }
 
-                        this.targetFaces.Add(bstf);
+                        this.viewModel.TargetFaces.Add(bstf);
 
                         this.SerializeBitmapSourceTargetFace(bstf);
 
                         this.takeTrainingImage = false;
-                        this.NameField.Text = this.NameField.Text.Replace(this.targetFaces.Count.ToString(), (this.targetFaces.Count + 1).ToString());
-
+                        
                         this.UpdateTargetFaces();
                     }
                 }
 
-                this.Video.Source = LoadBitmap(processedBitmap);
+                this.viewModel.CurrentVideoFrame = LoadBitmap(processedBitmap);
             }
             
             // Without an explicit call to GC.Collect here, memory runs out of control :(
@@ -201,7 +221,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
         private void SerializeBitmapSourceTargetFace(BitmapSourceTargetFace bstf)
         {
             var filenamePrefix = "TF_" + DateTime.Now.Ticks.ToString();
-            var suffix = this.radioFaceModelBuilder.IsChecked.GetValueOrDefault() ? ".fmb" : ".pca";
+            var suffix = this.viewModel.ProcessorType == ProcessorTypes.FaceModel ? ".fmb" : ".pca";
             System.IO.File.WriteAllText(filenamePrefix + suffix, JsonConvert.SerializeObject(bstf));
             bstf.Image.Save(filenamePrefix + ".png");
         }
@@ -211,15 +231,15 @@ namespace Sacknet.KinectFacialRecognitionDemo
         /// </summary>
         private void LoadAllTargetFaces()
         {
-            this.targetFaces.Clear();
+            this.viewModel.TargetFaces.Clear();
             var result = new List<BitmapSourceTargetFace>();
-            var suffix = this.radioFaceModelBuilder.IsChecked.GetValueOrDefault() ? ".fmb" : ".pca";
+            var suffix = this.viewModel.ProcessorType == ProcessorTypes.FaceModel ? ".fmb" : ".pca";
 
             foreach (var file in Directory.GetFiles(".", "TF_*" + suffix))
             {
                 var bstf = JsonConvert.DeserializeObject<BitmapSourceTargetFace>(File.ReadAllText(file));
                 bstf.Image = (Bitmap)Bitmap.FromFile(file.Replace(suffix, ".png"));
-                this.targetFaces.Add(bstf);
+                this.viewModel.TargetFaces.Add(bstf);
             }
         }
 
@@ -228,33 +248,33 @@ namespace Sacknet.KinectFacialRecognitionDemo
         /// </summary>
         private void UpdateTargetFaces()
         {
-            if (this.targetFaces.Count > 1)
+            if (this.viewModel.TargetFaces.Count > 1)
             {
                 EigenObjectRecognitionProcessor pcaProcessor = this.activeProcessor as EigenObjectRecognitionProcessor;
                 FaceModelRecognitionProcessor fmProcessor = this.activeProcessor as FaceModelRecognitionProcessor;
 
                 if (pcaProcessor != null)
-                    pcaProcessor.SetTargetFaces(this.targetFaces);
+                    pcaProcessor.SetTargetFaces(this.viewModel.TargetFaces);
                 else
-                    fmProcessor.SetTargetFaces(this.targetFaces);
+                    fmProcessor.SetTargetFaces(this.viewModel.TargetFaces);
             }
+
+            this.viewModel.TrainName = this.viewModel.TrainName.Replace(this.viewModel.TargetFaces.Count.ToString(), (this.viewModel.TargetFaces.Count + 1).ToString());
         }
 
         /// <summary>
         /// Starts the training image countdown
         /// </summary>
-        private void Train(object sender, RoutedEventArgs e)
+        private void Train()
         {
-            this.TrainButton.IsEnabled = false;
-            this.NameField.IsEnabled = false;
+            this.viewModel.TrainingInProcess = true;
 
             var timer = new DispatcherTimer();
             timer.Interval = TimeSpan.FromSeconds(2);
             timer.Tick += (s2, e2) =>
             {
                 timer.Stop();
-                this.NameField.IsEnabled = true;
-                this.TrainButton.IsEnabled = true;
+                this.viewModel.TrainingInProcess = false;
                 takeTrainingImage = true;
             };
             timer.Start();
@@ -264,7 +284,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
         /// Target face with a BitmapSource accessor for the face
         /// </summary>
         [JsonObject(MemberSerialization.OptIn)]
-        private class BitmapSourceTargetFace : IEigenObjectTargetFace, IFaceModelTargetFace
+        public class BitmapSourceTargetFace : IEigenObjectTargetFace, IFaceModelTargetFace
         {
             private BitmapSource bitmapSource;
 
