@@ -112,11 +112,7 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         private void FaceFrameArrived(object sender, HighDefinitionFaceFrameArrivedEventArgs e)
         {
-            if (this.recognizerWorker.IsBusy)
-                return;
-
             ulong? newTrackingId = null;
-            this.faceModel = null;
 
             using (var frame = e.FrameReference.AcquireFrame())
             {
@@ -137,6 +133,7 @@ namespace Sacknet.KinectFacialRecognition
                 {
                     Console.WriteLine("Creating FaceModelBuilder");
                     this.currentTrackingId = newTrackingId;
+                    this.faceModel = null;
                     this.constructedFaceModel = null;
                     this.DisposeFaceModelBuilder();
                     this.fmb = this.faceSource.OpenModelBuilder(FaceModelBuilderAttributes.HairColor | FaceModelBuilderAttributes.SkinColor);
@@ -157,7 +154,7 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         private void StartWorkerIfReady()
         {
-            if (this.faceReady && this.multiSourceReady)
+            if (!this.recognizerWorker.IsBusy && this.faceReady && this.multiSourceReady)
                 this.recognizerWorker.RunWorkerAsync();
         }
 
@@ -204,19 +201,26 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         private void MultiSourceFrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
         {
-            if (this.recognizerWorker.IsBusy)
-                return;
-
             var msFrame = e.FrameReference.AcquireFrame();
 
             using (var colorFrame = msFrame.ColorFrameReference.AcquireFrame())
             {
                 if (colorFrame != null)
                 {
-                    if (colorFrame.RawColorImageFormat == ColorImageFormat.Bgra)
-                        colorFrame.CopyRawFrameDataToArray(this.colorImageBuffer);
-                    else
-                        colorFrame.CopyConvertedFrameDataToArray(this.colorImageBuffer, ColorImageFormat.Bgra);
+                    if (Monitor.TryEnter(this.colorImageBuffer, 0))
+                    {
+                        try
+                        {
+                            if (colorFrame.RawColorImageFormat == ColorImageFormat.Bgra)
+                                colorFrame.CopyRawFrameDataToArray(this.colorImageBuffer);
+                            else
+                                colorFrame.CopyConvertedFrameDataToArray(this.colorImageBuffer, ColorImageFormat.Bgra);
+                        }
+                        finally
+                        {
+                            Monitor.Exit(this.colorImageBuffer);
+                        }
+                    }
                 }
             }
 
@@ -303,7 +307,12 @@ namespace Sacknet.KinectFacialRecognition
             Bitmap bmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
             BitmapData bmapdata = bmap.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, bmap.PixelFormat);
             IntPtr ptr = bmapdata.Scan0;
-            Marshal.Copy(buffer, 0, ptr, buffer.Length);
+            
+            lock (buffer)
+            {
+                Marshal.Copy(buffer, 0, ptr, buffer.Length);
+            }
+            
             bmap.UnlockBits(bmapdata);
             return bmap;
         }
