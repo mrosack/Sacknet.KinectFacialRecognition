@@ -15,35 +15,22 @@ namespace Sacknet.KinectFacialRecognitionTests
     public class FaceModelRecognizerTest
     {
         [TestMethod]
-        public void DataFromSamePersonMatches()
+        public void DataMatchesCorrectly()
         {
-            var result = this.CompareTwoFiles("mike1.txt", "mike2.txt");
+            var brady = this.ReadResult("brady.fmb");
+            var matt = this.ReadResult("matt.fmb");
+            var rosack = this.ReadResult("rosack.fmb");
+            var rosackTest = this.ReadResult("rosack_test.fmb");
 
-            Assert.AreEqual("mike1", result.Key);
-        }
-
-        [TestMethod]
-        public void DataFromDifferentPeopleFails()
-        {
-            var result = this.CompareTwoFiles("mike1.txt", "sara1.txt");
-
-            Assert.IsNull(result.Key);
-        }
-
-        private FaceModelRecognitionProcessorResult CompareTwoFiles(string file1, string file2)
-        {
-            var result1 = this.ReadResult(file1);
-            var result2 = this.ReadResult(file2);
-
-            var processor = new FaceModelRecognitionProcessor(new List<IFaceModelTargetFace> { result1 });
+            var processor = new FaceModelRecognitionProcessor(new List<IFaceModelTargetFace> { brady, matt, rosack });
             var result = new FaceModelRecognitionProcessorResult();
-            result.Deformations = result2.Deformations;
-            result.HairColor = result2.HairColor;
-            result.SkinColor = result2.SkinColor;
+            result.Deformations = rosackTest.Deformations;
+            result.HairColor = rosackTest.HairColor;
+            result.SkinColor = rosackTest.SkinColor;
 
             processor.Process(result);
 
-            return result;
+            Assert.AreEqual("Rosack", result.Key);
         }
 
         private FaceModelRecognitionProcessorResult ReadResult(string filename)
