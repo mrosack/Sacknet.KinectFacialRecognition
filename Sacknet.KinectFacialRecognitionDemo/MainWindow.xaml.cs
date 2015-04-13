@@ -100,14 +100,13 @@ namespace Sacknet.KinectFacialRecognitionDemo
             this.LoadAllTargetFaces();
             this.UpdateTargetFaces();
 
-            if (this.engine != null)
+            if (this.engine == null)
             {
-                this.engine.RecognitionComplete -= this.Engine_RecognitionComplete;
-                this.engine.Dispose();
+                this.engine = new KinectFacialRecognitionEngine(this.kinectSensor, this.activeProcessor);
+                this.engine.RecognitionComplete += Engine_RecognitionComplete;
             }
 
-            this.engine = new KinectFacialRecognitionEngine(this.kinectSensor, this.activeProcessor);
-            this.engine.RecognitionComplete += this.Engine_RecognitionComplete;
+            this.engine.Processors = new List<IRecognitionProcessor> { this.activeProcessor };
         }
 
         /// <summary>
@@ -249,15 +248,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
         private void UpdateTargetFaces()
         {
             if (this.viewModel.TargetFaces.Count > 1)
-            {
-                EigenObjectRecognitionProcessor pcaProcessor = this.activeProcessor as EigenObjectRecognitionProcessor;
-                FaceModelRecognitionProcessor fmProcessor = this.activeProcessor as FaceModelRecognitionProcessor;
-
-                if (pcaProcessor != null)
-                    pcaProcessor.SetTargetFaces(this.viewModel.TargetFaces);
-                else
-                    fmProcessor.SetTargetFaces(this.viewModel.TargetFaces);
-            }
+                this.activeProcessor.SetTargetFaces(this.viewModel.TargetFaces);
 
             this.viewModel.TrainName = this.viewModel.TrainName.Replace(this.viewModel.TargetFaces.Count.ToString(), (this.viewModel.TargetFaces.Count + 1).ToString());
         }

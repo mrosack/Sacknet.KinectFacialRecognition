@@ -10,11 +10,16 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
     /// <summary>
     /// Describes a target face for eigen object recognition
     /// </summary>
-    public interface IEigenObjectTargetFace : ITargetFace
+    public class EigenObjectTargetFace : IEigenObjectTargetFace
     {
+        /// <summary>
+        /// Gets or sets the key returned when this face is found
+        /// </summary>
+        public string Key { get; set; }
+
         /// <summary>
         /// Gets or sets the grayscale, 100x100 target image
         /// </summary>
-        Bitmap Image { get; set; }
+        public Bitmap Image { get; set; }
     }
 }

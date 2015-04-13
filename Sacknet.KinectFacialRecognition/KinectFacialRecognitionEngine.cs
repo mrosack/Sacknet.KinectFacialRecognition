@@ -39,6 +39,7 @@ namespace Sacknet.KinectFacialRecognition
 
         private bool faceReady = false;
         private bool multiSourceReady = false;
+        private IEnumerable<IRecognitionProcessor> processors;
 
         /// <summary>
         /// Initializes a new instance of the KinectFacialRecognitionEngine class
@@ -82,9 +83,23 @@ namespace Sacknet.KinectFacialRecognition
         public bool ProcessingEnabled { get; set; }
 
         /// <summary>
-        /// Gets the active facial recognition processors
+        /// Gets or sets the active facial recognition processors
         /// </summary>
-        protected IEnumerable<IRecognitionProcessor> Processors { get; private set; }
+        public IEnumerable<IRecognitionProcessor> Processors
+        {
+            get
+            {
+                return this.processors;
+            }
+
+            set
+            {
+                lock (this)
+                {
+                    this.processors = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets the active Kinect sensor

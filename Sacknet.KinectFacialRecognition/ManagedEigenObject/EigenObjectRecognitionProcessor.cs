@@ -20,23 +20,22 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// </summary>
         public EigenObjectRecognitionProcessor()
         {
+            this.Threshold = 1750;
         }
 
         /// <summary>
         /// Initializes a new instance of the EigenObjectRecognitionProcessor class
         /// </summary>
         public EigenObjectRecognitionProcessor(IEnumerable<IEigenObjectTargetFace> faces)
+            : this()
         {
             this.SetTargetFaces(faces);
         }
 
         /// <summary>
-        /// Initializes a new instance of the EigenObjectRecognitionProcessor class
+        /// Gets or sets the threshold for recognition
         /// </summary>
-        public EigenObjectRecognitionProcessor(IEnumerable<IEigenObjectTargetFace> faces, double threshold)
-        {
-            this.SetTargetFaces(faces, threshold);
-        }
+        public double Threshold { get; set; }
 
         /// <summary>
         /// Gets the facial recognition engine
@@ -47,23 +46,25 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// Loads the given target faces into the eigen object recognizer
         /// </summary>
         /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
-        public virtual void SetTargetFaces(IEnumerable<IEigenObjectTargetFace> faces)
+        public virtual void SetTargetFaces(IEnumerable<ITargetFace> faces)
         {
-            this.SetTargetFaces(faces, 1750);
+            if (!faces.All(x => x is IEigenObjectTargetFace))
+                throw new ArgumentException("All target faces must implement IEigenObjectTargetFace!");
+
+            this.SetTargetFaces(faces.Cast<IEigenObjectTargetFace>());
         }
 
         /// <summary>
         /// Loads the given target faces into the eigen object recognizer
         /// </summary>
         /// <param name="faces">The target faces to use for training.  Faces should be 100x100 and grayscale.</param>
-        /// <param name="threshold">Eigen distance threshold for a match.  1500-2000 is a reasonable value.  0 will never match.</param>
-        public virtual void SetTargetFaces(IEnumerable<IEigenObjectTargetFace> faces, double threshold)
+        public virtual void SetTargetFaces(IEnumerable<IEigenObjectTargetFace> faces)
         {
             lock (this.processingMutex)
             {
                 if (faces != null && faces.Any())
                 {
-                    this.Recognizer = new EigenObjectRecognizer(faces, threshold);
+                    this.Recognizer = new EigenObjectRecognizer(faces, this.Threshold);
                 }
             }
         }

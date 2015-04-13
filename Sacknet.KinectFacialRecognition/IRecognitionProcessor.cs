@@ -16,5 +16,10 @@ namespace Sacknet.KinectFacialRecognition
         /// Attempt to find a trained face
         /// </summary>
         IRecognitionProcessorResult Process(Bitmap colorSpaceBitmap, KinectFaceTrackingResult trackingResults);
+
+        /// <summary>
+        /// Loads the given target faces into the processor
+        /// </summary>
+        void SetTargetFaces(IEnumerable<ITargetFace> faces);
     }
 }

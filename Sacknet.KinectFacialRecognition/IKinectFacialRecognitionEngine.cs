@@ -21,5 +21,10 @@ namespace Sacknet.KinectFacialRecognition
         /// Gets or sets a value indicating whether images will be processed for facial recognition.  If false, the video stream will be passed through untouched.
         /// </summary>
         bool ProcessingEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the active facial recognition processors
+        /// </summary>
+        IEnumerable<IRecognitionProcessor> Processors { get; set; }
     }
 }

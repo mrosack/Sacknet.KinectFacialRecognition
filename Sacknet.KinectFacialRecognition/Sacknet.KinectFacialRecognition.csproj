@@ -70,9 +70,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions.cs" />
+    <Compile Include="ITargetFace.cs" />
     <Compile Include="KinectFaceModel\FaceModelRecognitionProcessor.cs" />
     <Compile Include="KinectFaceModel\FaceModelRecognitionProcessorResult.cs" />
     <Compile Include="IRecognitionProcessor.cs" />
+    <Compile Include="KinectFaceModel\FaceModelTargetFace.cs" />
     <Compile Include="KinectFaceModel\IFaceModelTargetFace.cs" />
     <Compile Include="ManagedEigenObject\EigenObjectRecognitionProcessor.cs" />
     <Compile Include="FloatImage.cs" />
@@ -83,6 +85,7 @@
     <Compile Include="ManagedEigenObject\EigenObjectRecognitionProcessorResult.cs" />
     <Compile Include="ManagedEigenObject\EigenObjectRecognizer.cs" />
     <Compile Include="ManagedEigenObject\EigenObjects.cs" />
+    <Compile Include="ManagedEigenObject\EigenObjectTargetFace.cs" />
     <Compile Include="Point3D.cs" />
     <Compile Include="RecognitionResult.cs" />
     <Compile Include="KinectFacialRecognitionEngine.cs" />

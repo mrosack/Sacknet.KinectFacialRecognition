@@ -41,6 +41,17 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         /// <summary>
         /// Loads the given target faces
         /// </summary>
+        public virtual void SetTargetFaces(IEnumerable<ITargetFace> faces)
+        {
+            if (!faces.All(x => x is IFaceModelTargetFace))
+                throw new ArgumentException("All target faces must implement IFaceModelTargetFace!");
+
+            this.SetTargetFaces(faces.Cast<IFaceModelTargetFace>());
+        }
+
+        /// <summary>
+        /// Loads the given target faces
+        /// </summary>
         public virtual void SetTargetFaces(IEnumerable<IFaceModelTargetFace> faces)
         {
             lock (this.processingMutex)
