@@ -62,6 +62,7 @@ namespace Sacknet.KinectFacialRecognition
             this.msReader.MultiSourceFrameArrived += this.MultiSourceFrameArrived;
 
             this.faceSource = new HighDefinitionFaceFrameSource(kinect);
+            this.faceSource.TrackingQuality = FaceAlignmentQuality.High;
             this.faceReader = this.faceSource.OpenReader();
             this.faceReader.FrameArrived += this.FaceFrameArrived;
 
@@ -163,22 +164,21 @@ namespace Sacknet.KinectFacialRecognition
         /// </summary>
         private void FaceModelBuilderCollectionCompleted(object sender, FaceModelBuilderCollectionCompletedEventArgs e)
         {
-            ThreadPool.QueueUserWorkItem((wc) =>
+            // Unfortunately, running this in a background thread seems to cause frequent crashes from
+            // the kinect face library.  I wish there was a better way...
+            lock (this.processFaceModelMutex)
             {
-                lock (this.processFaceModelMutex)
-                {
-                    if (this.fmb == null)
-                        return;
+                if (this.fmb == null)
+                    return;
 
-                    this.constructionInProcess = true;
+                this.constructionInProcess = true;
 
-                    this.fmb.CollectionCompleted -= this.FaceModelBuilderCollectionCompleted;
-                    this.constructedFaceModel = e.ModelData.ProduceFaceModel();
-                    this.DisposeFaceModelBuilder();
+                this.fmb.CollectionCompleted -= this.FaceModelBuilderCollectionCompleted;
+                this.constructedFaceModel = e.ModelData.ProduceFaceModel();
+                this.DisposeFaceModelBuilder();
 
-                    this.constructionInProcess = false;
-                }
-            });
+                this.constructionInProcess = false;
+            }
         }
 
         /// <summary>
