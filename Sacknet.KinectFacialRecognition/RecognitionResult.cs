@@ -14,6 +14,14 @@ namespace Sacknet.KinectFacialRecognition
     public class RecognitionResult : IDisposable
     {
         /// <summary>
+        /// Initializes a new instance of the RecognitionResult class
+        /// </summary>
+        public RecognitionResult()
+        {
+            this.Faces = new List<TrackedFace>();
+        }
+
+        /// <summary>
         /// Gets or sets the color space bitmap from the kinect
         /// </summary>
         public Bitmap ColorSpaceBitmap { get; set; }
