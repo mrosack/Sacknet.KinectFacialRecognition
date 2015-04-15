@@ -8,18 +8,18 @@ using System.Threading.Tasks;
 namespace Sacknet.KinectFacialRecognition
 {
     /// <summary>
-    /// An "Image" consisting of floating point pixels
+    /// An "Image" consisting of double precision floating point pixels
     /// </summary>
-    public class FloatImage
+    public class DoubleImage
     {
         /// <summary>
-        /// Initializes a new instance of the FloatImage class
+        /// Initializes a new instance of the DoubleImage class
         /// </summary>
-        public FloatImage(int width, int height)
+        public DoubleImage(int width, int height)
         {
             this.Step = width;
             this.Size = new Size(width, height);
-            this.Data = new float[width * height];
+            this.Data = new double[width * height];
         }
 
         /// <summary>
@@ -35,6 +35,6 @@ namespace Sacknet.KinectFacialRecognition
         /// <summary>
         /// Gets the raw image data
         /// </summary>
-        public float[] Data { get; private set; }
+        public double[] Data { get; private set; }
     }
 }

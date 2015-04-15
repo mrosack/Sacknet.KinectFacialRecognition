@@ -34,6 +34,14 @@ namespace Sacknet.KinectFacialRecognition.KinectFaceModel
         }
 
         /// <summary>
+        /// Gets a value indicating whether this processor requires a face model to be constructed
+        /// </summary>
+        public bool RequiresFaceModelBuilder
+        {
+            get { return true; }
+        }
+
+        /// <summary>
         /// Gets or sets the score threshold that denotes a match
         /// </summary>
         public double Threshold { get; set; }

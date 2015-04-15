@@ -29,10 +29,10 @@ namespace Sacknet.KinectFacialRecognitionTests
 
             var recognizer = new EigenObjectRecognizer(faces);
 
-            float eigenDistance;
+            double eigenDistance;
             var result = recognizer.Recognize(new Bitmap("test_mike.png"), out eigenDistance);
 
-            Assert.AreEqual(734.0547, Math.Round(eigenDistance, 4));
+            Assert.AreEqual(734.0479, Math.Round(eigenDistance, 4));
             Assert.AreEqual(@".\train_mike_2.png", result);
         }
     }

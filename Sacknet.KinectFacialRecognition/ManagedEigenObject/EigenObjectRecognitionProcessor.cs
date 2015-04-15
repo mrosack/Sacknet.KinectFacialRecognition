@@ -33,6 +33,14 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         }
 
         /// <summary>
+        /// Gets a value indicating whether this processor requires a face model to be constructed
+        /// </summary>
+        public bool RequiresFaceModelBuilder
+        {
+            get { return false; }
+        }
+
+        /// <summary>
         /// Gets or sets the threshold for recognition
         /// </summary>
         public double Threshold { get; set; }
@@ -83,7 +91,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
                         grayBmp.HistogramEqualize();
 
                         string key = null;
-                        float eigenDistance = -1;
+                        double eigenDistance = -1;
 
                         if (this.Recognizer != null)
                             key = this.Recognizer.Recognize(grayBmp, out eigenDistance);

@@ -143,11 +143,10 @@ namespace Sacknet.KinectFacialRecognition
                 }
             }
 
-            if (newTrackingId.HasValue && this.currentTrackingId != newTrackingId)
+            if (this.Processors.Any(x => x.RequiresFaceModelBuilder) && newTrackingId.HasValue && this.currentTrackingId != newTrackingId)
             {
                 lock (this.processFaceModelMutex)
                 {
-                    Console.WriteLine("Creating FaceModelBuilder");
                     this.currentTrackingId = newTrackingId;
                     this.faceModel = null;
                     this.constructedFaceModel = null;

@@ -77,7 +77,7 @@
     <Compile Include="KinectFaceModel\FaceModelTargetFace.cs" />
     <Compile Include="KinectFaceModel\IFaceModelTargetFace.cs" />
     <Compile Include="ManagedEigenObject\EigenObjectRecognitionProcessor.cs" />
-    <Compile Include="FloatImage.cs" />
+    <Compile Include="DoubleImage.cs" />
     <Compile Include="BitmapExtensions.cs" />
     <Compile Include="IKinectFacialRecognitionEngine.cs" />
     <Compile Include="IRecognitionProcessorResult.cs" />

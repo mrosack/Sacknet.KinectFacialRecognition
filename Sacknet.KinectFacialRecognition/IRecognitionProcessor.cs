@@ -13,6 +13,11 @@ namespace Sacknet.KinectFacialRecognition
     public interface IRecognitionProcessor
     {
         /// <summary>
+        /// Gets a value indicating whether this processor requires a face model to be constructed
+        /// </summary>
+        bool RequiresFaceModelBuilder { get; }
+
+        /// <summary>
         /// Attempt to find a trained face
         /// </summary>
         IRecognitionProcessorResult Process(Bitmap colorSpaceBitmap, KinectFaceTrackingResult trackingResults);

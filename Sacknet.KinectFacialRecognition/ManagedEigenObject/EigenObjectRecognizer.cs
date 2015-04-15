@@ -36,8 +36,8 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
             Debug.Assert(eigenDistanceThreshold >= 0.0, "Eigen-distance threshold should always >= 0.0");
 
             Bitmap[] images = targetFaces.Select(x => x.Image).ToArray();
-            FloatImage[] eigenImages;
-            FloatImage averageImage;
+            DoubleImage[] eigenImages;
+            DoubleImage averageImage;
 
             CalcEigenObjects(images, maxIter, eps, out eigenImages, out averageImage);
 
@@ -52,7 +52,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// Gets or sets the eigen vectors that form the eigen space
         /// </summary>
         /// <remarks>The set method is primary used for deserialization, do not attemps to set it unless you know what you are doing</remarks>
-        public FloatImage[] EigenImages { get; set; }
+        public DoubleImage[] EigenImages { get; set; }
 
         /// <summary>
         /// Gets or sets the labels for the corresponding training image
@@ -70,18 +70,18 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// Gets or sets the average Image. 
         /// </summary>
         /// <remarks>The set method is primary used for deserialization, do not attemps to set it unless you know what you are doing</remarks>
-        public FloatImage AverageImage { get; set; }
+        public DoubleImage AverageImage { get; set; }
 
         /// <summary>
         /// Gets or sets the eigen values of each of the training image
         /// </summary>
         /// <remarks>The set method is primary used for deserialization, do not attemps to set it unless you know what you are doing</remarks>
-        public float[][] EigenValues { get; set; }
+        public double[][] EigenValues { get; set; }
 
         /// <summary>
         /// Caculate the eigen images for the specific traning image
         /// </summary>
-        public static void CalcEigenObjects(Bitmap[] trainingImages, int maxIter, double eps, out FloatImage[] eigenImages, out FloatImage avg)
+        public static void CalcEigenObjects(Bitmap[] trainingImages, int maxIter, double eps, out DoubleImage[] eigenImages, out DoubleImage avg)
         {
             int width = trainingImages[0].Width;
             int height = trainingImages[0].Height;
@@ -91,11 +91,11 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
 
             int maxEigenObjs = maxIter;
 
-            eigenImages = new FloatImage[maxEigenObjs];
+            eigenImages = new DoubleImage[maxEigenObjs];
             for (int i = 0; i < eigenImages.Length; i++)
-                eigenImages[i] = new FloatImage(width, height);
+                eigenImages[i] = new DoubleImage(width, height);
 
-            avg = new FloatImage(width, height);
+            avg = new DoubleImage(width, height);
 
             EigenObjects.CalcEigenObjects(trainingImages, maxIter, eps, eigenImages, null, avg);
         }
@@ -103,7 +103,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Decompose the image as eigen values, using the specific eigen vectors
         /// </summary>
-        public static float[] EigenDecomposite(Bitmap src, FloatImage[] eigenImages, FloatImage avg)
+        public static double[] EigenDecomposite(Bitmap src, DoubleImage[] eigenImages, DoubleImage avg)
         {
             return EigenObjects.EigenDecomposite(src, eigenImages, avg);
         }
@@ -111,11 +111,11 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Get the Euclidean eigen-distance between <paramref name="image"/> and every other image in the database
         /// </summary>
-        public float[] GetEigenDistances(Bitmap image)
+        public double[] GetEigenDistances(Bitmap image)
         {
             var decomp = EigenDecomposite(image, this.EigenImages, this.AverageImage);
 
-            List<float> result = new List<float>();
+            List<double> result = new List<double>();
 
             foreach (var eigenValue in this.EigenValues)
             {
@@ -127,7 +127,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
                     sum += Math.Pow(decomp[i] - eigenValue[i], 2);
                 }
 
-                result.Add((float)Math.Sqrt(sum));
+                result.Add(Math.Sqrt(sum));
             }
 
             return result.ToArray();
@@ -136,9 +136,9 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Given the <paramref name="image"/> to be examined, find in the database the most similar object, return the index and the eigen distance
         /// </summary>
-        public void FindMostSimilarObject(Bitmap image, out int index, out float eigenDistance, out string label)
+        public void FindMostSimilarObject(Bitmap image, out int index, out double eigenDistance, out string label)
         {
-            float[] dist = this.GetEigenDistances(image);
+            double[] dist = this.GetEigenDistances(image);
 
             index = 0;
             eigenDistance = dist[0];
@@ -158,7 +158,7 @@ namespace Sacknet.KinectFacialRecognition.ManagedEigenObject
         /// <summary>
         /// Try to recognize the image and return its label
         /// </summary>
-        public string Recognize(Bitmap image, out float eigenDistance)
+        public string Recognize(Bitmap image, out double eigenDistance)
         {
             int index;
             string label;

@@ -103,7 +103,7 @@ namespace Sacknet.KinectFacialRecognitionDemo
             if (this.engine == null)
             {
                 this.engine = new KinectFacialRecognitionEngine(this.kinectSensor, this.activeProcessor);
-                this.engine.RecognitionComplete += Engine_RecognitionComplete;
+                this.engine.RecognitionComplete += this.Engine_RecognitionComplete;
             }
 
             this.engine.Processors = new List<IRecognitionProcessor> { this.activeProcessor };
